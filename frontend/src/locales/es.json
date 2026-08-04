@@ -1,0 +1,68 @@
+{
+  "app": {
+    "name": "Chrono",
+    "tagline": "El pulso de tus servicios en el tiempo"
+  },
+  "form": {
+    "namePlaceholder": "Nombre (ej. Mi API)",
+    "urlPlaceholder": "URL (ej. midominio.com)",
+    "add": "Agregar",
+    "adding": "Agregando...",
+    "addError": "No se pudo agregar el servicio."
+  },
+  "status": {
+    "up": "Operativo",
+    "degraded": "Degradado",
+    "down": "Caído",
+    "pending": "Sin datos aún",
+    "connected": "En vivo",
+    "disconnected": "Reconectando...",
+    "reconnectBanner": "Conexión perdida — reconectando..."
+  },
+  "metrics": {
+    "latency": "Latencia",
+    "p95": "p95 (24h)",
+    "avg": "Promedio",
+    "history": "Últimas 24h",
+    "noHistory": "sin historial suficiente aún",
+    "hourlyAvg": "promedio por hora",
+    "hoverHint": "Pasa el cursor sobre la gráfica para ver valores exactos"
+  },
+  "summary": {
+    "operational": "operativos",
+    "degraded": "degradados",
+    "down": "caídos",
+    "uptime": "uptime"
+  },
+  "empty": {
+    "title": "Aún no monitoreas nada",
+    "subtitle": "Agrega un servicio arriba para empezar a ver su estado en tiempo real."
+  },
+  "incidents": {
+    "title": "Historial de incidentes",
+    "ongoing": "En curso",
+    "duration": "Duración",
+    "activeCount": "{n} en curso",
+    "wentDown": "El servicio dejó de responder",
+    "wentDegraded": "El servicio respondió más lento de lo normal",
+    "justNow": "justo ahora",
+    "minutesAgo": "hace {n} min",
+    "hoursAgo": "hace {n}h",
+    "empty": "Sin incidentes registrados. Todo tranquilo por aquí."
+  },
+  "confirm": {
+    "deleteTitle": "¿Eliminar este servicio?",
+    "deleteBody": "Vas a dejar de monitorear \"{name}\". Se borrará todo su historial y no se puede deshacer.",
+    "cancel": "Cancelar",
+    "delete": "Sí, eliminar"
+  },
+  "editModal": {
+    "title": "Editar Servicio",
+    "save": "Guardar cambios",
+    "saving": "Guardando..."
+  },
+  "pin": {
+    "pin": "Anclar servicio",
+    "unpin": "Desanclar servicio"
+  }
+}

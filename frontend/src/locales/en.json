@@ -1,0 +1,68 @@
+{
+  "app": {
+    "name": "Chrono",
+    "tagline": "Your services' pulse over time"
+  },
+  "form": {
+    "namePlaceholder": "Name (e.g. My API)",
+    "urlPlaceholder": "URL (e.g. mydomain.com)",
+    "add": "Add",
+    "adding": "Adding...",
+    "addError": "Couldn't add the service."
+  },
+  "status": {
+    "up": "Operational",
+    "degraded": "Degraded",
+    "down": "Down",
+    "pending": "No data yet",
+    "connected": "Live",
+    "disconnected": "Reconnecting...",
+    "reconnectBanner": "Connection lost — reconnecting..."
+  },
+  "metrics": {
+    "latency": "Latency",
+    "p95": "p95 (24h)",
+    "avg": "Average",
+    "history": "Last 24h",
+    "noHistory": "not enough history yet",
+    "hourlyAvg": "hourly average",
+    "hoverHint": "Hover over the chart to see exact values"
+  },
+  "summary": {
+    "operational": "operational",
+    "degraded": "degraded",
+    "down": "down",
+    "uptime": "uptime"
+  },
+  "empty": {
+    "title": "Nothing monitored yet",
+    "subtitle": "Add a service above to start seeing its status in real time."
+  },
+  "incidents": {
+    "title": "Incident history",
+    "ongoing": "Ongoing",
+    "duration": "Duration",
+    "activeCount": "{n} ongoing",
+    "wentDown": "The service stopped responding",
+    "wentDegraded": "The service responded slower than usual",
+    "justNow": "just now",
+    "minutesAgo": "{n}m ago",
+    "hoursAgo": "{n}h ago",
+    "empty": "No incidents recorded. All quiet here."
+  },
+  "confirm": {
+    "deleteTitle": "Delete this service?",
+    "deleteBody": "You're about to stop monitoring \"{name}\". Its full history will be deleted and this can't be undone.",
+    "cancel": "Cancel",
+    "delete": "Yes, delete"
+  },
+  "editModal": {
+    "title": "Edit Service",
+    "save": "Save changes",
+    "saving": "Saving..."
+  },
+  "pin": {
+    "pin": "Pin service",
+    "unpin": "Unpin service"
+  }
+}
