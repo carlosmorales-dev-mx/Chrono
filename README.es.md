@@ -249,11 +249,6 @@ que corran varios ciclos de chequeo. Esto es esperado, no un bug.
   comentarios), pero no todo ese historial está reflejado en este
   documento.
 
-## Licencia
-
-Todavía no decidida. Agrega un archivo `LICENSE` antes de tratar esto
-como open source bajo una licencia específica.
-
 ## Autor
 
 Carlos Morales — [cmorales.dev](https://cmorales.dev)
