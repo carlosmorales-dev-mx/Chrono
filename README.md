@@ -240,11 +240,6 @@ expected, not a bug.
   still references "Fase 5.5" for the incident timeline in code
   comments), but not all of that history is reflected in this document.
 
-## License
-
-Not yet decided. Add a `LICENSE` file before treating this as open
-source under a specific license.
-
 ## Author
 
 Carlos Morales — [cmorales.dev](https://cmorales.dev)
