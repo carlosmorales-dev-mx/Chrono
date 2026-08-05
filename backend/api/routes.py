@@ -129,7 +129,7 @@ def listar_recientes(db: Session = Depends(get_db)):
 @router.get("/chequeos/estado-actual")
 def estado_actual(db: Session = Depends(get_db)):
     resultado = db.execute(text("""
-        SELECT s.id, s.nombre, s.url, c.estado, c.codigo_http, c.latencia_ms, c.creado_en
+        SELECT s.id, s.nombre, s.url, s.anclado, c.estado, c.codigo_http, c.latencia_ms, c.creado_en
         FROM servicios s
         LEFT JOIN LATERAL (
             SELECT estado, codigo_http, latencia_ms, creado_en
@@ -140,7 +140,7 @@ def estado_actual(db: Session = Depends(get_db)):
     """)).mappings().all()
 
     return [
-        {"id": r["id"], "nombre": r["nombre"], "url": r["url"], "estado": r["estado"],
+        {"id": r["id"], "nombre": r["nombre"], "url": r["url"], "anclado": r["anclado"], "estado": r["estado"],
          "codigo_http": r["codigo_http"], "latencia_ms": r["latencia_ms"],
          "creado_en": r["creado_en"].isoformat() if r["creado_en"] else None}
         for r in resultado

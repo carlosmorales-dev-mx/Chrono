@@ -36,8 +36,21 @@ export const useServiciosStore = defineStore('servicios', {
     },
 
     async alternarAnclado(id) {
-      const { data } = await axios.patch(`${API_URL}/servicios/${id}/anclar`)
-      this.servicios[id] = { ...this.servicios[id], anclado: data.anclado }
+      // Actualizacion OPTIMISTA: cambia la UI de inmediato, sin
+      // esperar la respuesta del servidor -- antes el boton parecia
+      // "no reaccionar" durante el round-trip de red, lo que llevaba
+      // a un segundo clic que terminaba revirtiendo el primero.
+      const valorAnterior = this.servicios[id]?.anclado
+      this.servicios[id] = { ...this.servicios[id], anclado: !valorAnterior }
+
+      try {
+        const { data } = await axios.patch(`${API_URL}/servicios/${id}/anclar`)
+        // Confirma con el valor real del servidor (por si acaso)
+        this.servicios[id] = { ...this.servicios[id], anclado: data.anclado }
+      } catch (e) {
+        // Si el servidor fallo, revierte al valor anterior
+        this.servicios[id] = { ...this.servicios[id], anclado: valorAnterior }
+      }
     },
 
     async eliminarServicio(id) {
