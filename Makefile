@@ -171,3 +171,23 @@ unused-clean: ## borra (con confirmación) lo que es seguro: archivos sin uso y 
 
 empty: ## solo carpetas vacías (informe)
 	$(PYTHON) tools/mantenimiento.py vacias
+
+# --- Chrono: contenedores y migraciones (agregado por fase3.sh) ---
+.PHONY: stack stack-logs stack-down revision check-containers
+
+stack: ## levanta TODO en contenedores (PostgreSQL + backend + worker + frontend) en http://localhost:8080
+	podman-compose -f podman-compose.stack.yml up -d --build
+
+stack-logs: ## sigue los logs del stack en contenedores
+	podman-compose -f podman-compose.stack.yml logs -f
+
+stack-down: ## detiene el stack en contenedores (los datos quedan en el volumen chrono_pgdata)
+	podman-compose -f podman-compose.stack.yml down
+
+revision: check-backend-ready ## crea una migración desde los cambios del modelo:  make revision m="agrega una columna"
+	@test -n "$(m)" || { echo 'falta el mensaje:  make revision m="describe el cambio"'; exit 1; }
+	cd $(BACKEND_DIR) && $(BACKEND_PY) -m alembic revision --autogenerate -m "$(m)"
+
+check-containers: check-backend-ready ## revisa Containerfiles, compose, nginx, CI y README sin construir nada
+	$(BACKEND_PY) tools/verificar_contenedores.py
+	$(PYTHON) tools/verificar_docs.py

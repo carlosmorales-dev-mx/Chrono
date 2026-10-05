@@ -1,0 +1,21 @@
+# Frontend de Chrono: se compila con Node y se sirve con nginx, que también hace de proxy hacia el backend
+# (así el navegador habla con un solo origen y no hace falta CORS).
+#   podman build -f frontend/Containerfile -t chrono-frontend --build-arg VITE_API_URL= frontend
+ARG NODE_VERSION=24
+
+FROM docker.io/library/node:${NODE_VERSION}-alpine AS compilar
+ARG PNPM_VERSION=11
+# Vacío = «el backend está en el mismo origen» (lo sirve el proxy de nginx). Ver src/config.js.
+ARG VITE_API_URL=""
+RUN npm install -g pnpm@${PNPM_VERSION}
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY . .
+ENV VITE_API_URL=${VITE_API_URL}
+RUN pnpm build
+
+FROM docker.io/library/nginx:stable-alpine
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=compilar /app/dist /usr/share/nginx/html
+EXPOSE 80

@@ -1,0 +1,29 @@
+# Backend de Chrono (FastAPI). Construir:  podman build -f backend/Containerfile -t chrono-backend backend
+# Dos etapas: la primera compila las dependencias (necesita compilador y libpq-dev por si psycopg2 no trae rueda
+# para tu versión de Python); la final solo lleva el entorno ya instalado y corre sin privilegios.
+ARG PYTHON_VERSION=3.14
+
+FROM docker.io/library/python:${PYTHON_VERSION}-slim AS dependencias
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+FROM docker.io/library/python:${PYTHON_VERSION}-slim
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libpq5 \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --uid 10001 chrono
+COPY --from=dependencias /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+WORKDIR /app
+COPY --chown=chrono:chrono . .
+USER chrono
+EXPOSE 8001
+# Espera a la base de datos (puede tardar unos segundos) y arranca. Las migraciones las aplica la propia app al iniciar.
+CMD ["sh", "-c", "python espera_db.py 60 && exec uvicorn main:app --host 0.0.0.0 --port 8001"]

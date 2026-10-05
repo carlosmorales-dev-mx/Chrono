@@ -167,6 +167,17 @@ def main():
     ap.add_argument("--abrir", type=int, default=2)
     ap.add_argument("--cerrar", type=int, default=3)
     a = ap.parse_args()
+    # Antes de nada: ¿hay alguien escuchando? Un «Connection refused» pelado no dice qué hacer.
+    try:
+        urllib.request.urlopen(a.base.rstrip("/") + "/health", timeout=5)
+    except urllib.error.HTTPError:
+        pass  # contestó (aunque sea con un error): hay servidor, las pruebas dirán qué pasa
+    except (urllib.error.URLError, OSError) as e:
+        print(f"\n  No hay ningún backend respondiendo en {a.base}  ({getattr(e, 'reason', e)})")
+        print("  La prueba de humo necesita el backend ENCENDIDO:")
+        print("    · corre «make dev» en una terminal y «make smoke» en OTRA;")
+        print("    · si ya estaba corriendo, mira esa terminal: puede haberse caído («[backend] se cayó, reintentando…»).")
+        return 2
     try:
         correr(a.base, a.token, a.abrir, a.cerrar)
     except Exception as e:  # una excepción inesperada también es una falla

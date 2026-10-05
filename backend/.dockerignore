@@ -1,0 +1,12 @@
+# Lo que NO debe entrar a la imagen. Sobre todo: los .env (tienen secretos; se pasan como variables al ejecutar).
+.env
+.env.*
+!.env.example
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+tests/
+Containerfile
+.dockerignore

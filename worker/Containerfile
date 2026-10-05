@@ -1,0 +1,14 @@
+# Worker de Chrono. Construir:  podman build -f worker/Containerfile -t chrono-worker worker
+ARG PYTHON_VERSION=3.14
+
+FROM docker.io/library/python:${PYTHON_VERSION}-slim
+RUN useradd --create-home --uid 10001 chrono
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY --chown=chrono:chrono . .
+USER chrono
+# BACKEND_URL e INGEST_TOKEN llegan como variables de entorno (ver podman-compose.stack.yml).
+CMD ["python", "check_servicios.py"]

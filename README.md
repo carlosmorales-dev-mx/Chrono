@@ -2,244 +2,347 @@
 
 **English** | [Español](README.es.md)
 
-Real-time status monitor for public APIs and services. Chrono checks a
-configurable list of endpoints on an interval, persists the history, and
-pushes live updates to every connected browser over a WebSocket -- no
-manual refresh needed to see a service go down.
+[![CI](https://github.com/carlosmorales-dev-mx/Chrono/actions/workflows/ci.yml/badge.svg)](https://github.com/carlosmorales-dev-mx/Chrono/actions/workflows/ci.yml)
 
-Originally scoped to track a handful of well-known developer-facing APIs
-(OpenAI, Anthropic, DeepSeek, GitHub, Cloudflare, Vercel, the npm
-registry, PyPI), it now supports adding, editing, and removing any HTTP
-endpoint from the dashboard itself.
+Real-time status monitor for public APIs and services. Chrono checks a
+configurable list of endpoints on an interval, stores the history, opens and
+closes incidents on its own, and pushes live updates to every connected browser
+over a WebSocket -- no refresh needed to see a service go down.
+
+![Chrono dashboard in dark theme](docs/img/panel-oscuro.png)
+
+| Light theme | Incidents | Tile detail |
+| --- | --- | --- |
+| ![Light theme](docs/img/panel-claro.png) | ![Incidents](docs/img/incidentes.png) | ![Service detail in tile view](docs/img/mosaico-detalle.png) |
+
+## Try it in 30 seconds
+
+The interface has a **demo mode** with simulated data, so you can see it without a
+backend, a database or a worker:
+
+```bash
+cd frontend
+pnpm install
+pnpm dev
+```
+
+Then open `http://localhost:5173/?demo`. Add `=caida` for an outage in progress,
+or `=ok` for everything operational. The **Tutorial** button in the top bar walks
+through the whole interface with an animated cursor.
 
 ## Overview
 
-Chrono splits status monitoring into three independent processes that
-only talk to each other over HTTP and WebSocket, never by sharing a
-database connection:
+Chrono splits status monitoring into three independent processes that only talk
+to each other over HTTP and WebSocket, never by sharing a database connection:
 
-- A **worker** checks every monitored service in parallel on a fixed
-  interval and reports the results to the backend. It holds no database
-  credentials at all -- only the backend's URL.
-- The **backend** is the only process that talks to PostgreSQL. It
-  receives check results from the worker, detects state transitions to
-  open and close incidents, and broadcasts live updates to every
-  connected browser.
-- The **frontend** renders the dashboard and receives updates over a
-  WebSocket, so a service going down appears on screen within seconds,
-  without polling.
-
-## Screenshots
-
-*Add a screenshot of the dashboard here before publishing.*
+- A **worker** checks every monitored service in parallel on a fixed interval and
+  reports the results to the backend. It holds no database credentials at all,
+  only the backend's URL and a shared token.
+- The **backend** is the only process that talks to PostgreSQL. It validates and
+  stores the results, detects incidents, serves the API and broadcasts live
+  updates to every connected browser.
+- The **frontend** renders the dashboard and receives updates over a WebSocket,
+  so a service going down appears on screen within seconds, without polling.
 
 ## Features
 
-- Live status dashboard: per-service cards, sorted by severity (down
-  first, then degraded, then healthy), with pinned services always shown
-  first regardless of status
-- Add, edit, and remove monitored services directly from the UI
-- Real-time updates over WebSocket, with a visible reconnection banner
-  if the connection drops
-- Automatic incident detection: state transitions (healthy to degraded,
-  degraded to down, and back) open and close incident records with
-  start and end timestamps
-- Incident timeline showing the most recent incidents across all
-  services, with duration
-- Latency history charts with adaptive downsampling: recent data renders
-  as raw points; once a service accumulates more than roughly 30 points
-  in a 24-hour window, they are grouped into equal-sized blocks instead
-  of fixed hourly buckets, so a freshly added service is never stuck
-  with an empty chart
-- p50 / p95 / p99 latency percentiles per service over a rolling
-  24-hour window
-- Publicly embeddable SVG status badges, one per service, generated on
-  demand
-- Bilingual interface (Spanish / English)
-- Summary bar with counts of operational, degraded, and down services,
-  and an uptime percentage
+- Live dashboard: a one-sentence headline, a strip with one segment per service,
+  and a list grouped into "need attention" and "operational". The healthy stay
+  quiet; the broken stand out.
+- List and tile views. In list view a row expands in place; in tile view the
+  detail opens in a centered dialog so the grid never moves.
+- Add, edit, pin and remove monitored services from the interface.
+- **Incidents opened and closed automatically**, with hysteresis: it takes two bad
+  checks in a row to open one and three good ones to close it, so a service that
+  hovers around its latency threshold does not produce dozens of 30-second
+  incidents.
+- Incidents screen with the one in progress featured and highlighted on its latency
+  curve, filters by service, type and period, and per-incident detail.
+- 24-hour latency history grouped by time, **including outages**, plus p50 / p95 /
+  p99 percentiles.
+- Embeddable SVG status badges, one per service.
+- Interactive tutorial, light and dark themes, Spanish and English.
+- Accessibility: WCAG AA contrast measured in both themes, visible focus,
+  `prefers-reduced-motion` and `prefers-contrast` support.
+- Read-only mode, so a public demo can show real data without letting anyone edit
+  it.
 
 ## Architecture
 
 ```mermaid
 graph LR
-    External["External APIs<br/>(OpenAI, Anthropic, GitHub, npm...)"] -.->|"health checks<br/>every 30s"| Worker["Worker<br/>asyncio + httpx"]
-    Worker -->|"POST /internal/ingest"| Backend["Backend<br/>FastAPI"]
+    External["External APIs<br/>(OpenAI, Anthropic, GitHub, npm...)"] -.->|"health checks<br/>every 30 s"| Worker["Worker<br/>asyncio + httpx"]
+    Worker -->|"POST /internal/ingest<br/>(shared token)"| Backend["Backend<br/>FastAPI"]
     Backend --> DB[("PostgreSQL")]
     Backend -->|"WebSocket /ws"| Frontend["Frontend<br/>Vue 3"]
     Browser[Browser] --> Frontend
+    Frontend -->|"REST"| Backend
 ```
 
-The worker never connects to PostgreSQL directly. It only knows the
-backend's URL and reports results over a plain HTTP POST; the backend is
-the single owner of the schema and the only process with database
-credentials. This keeps the worker disposable and easy to scale or
-replace without touching persistence at all.
+How an incident is opened and closed:
 
-## Tech Stack
+```mermaid
+stateDiagram-v2
+    [*] --> Healthy
+    Healthy --> Healthy: good check
+    Healthy --> Incident: 2 bad checks in a row
+    Incident --> Incident: still open (bad checks, or fewer than 3 good ones)
+    Incident --> Healthy: 3 good checks in a row
+```
 
-| Layer     | Technology                       |
-| ---------- | ----------------------------------- |
-| Frontend   | Vue 3, Pinia, vue-i18n              |
-| Backend    | FastAPI, SQLAlchemy, WebSockets     |
-| Worker     | Python asyncio, httpx               |
-| Database   | PostgreSQL 16 (Podman container)    |
-| Realtime   | WebSocket (backend to frontend)     |
+The worker never connects to PostgreSQL. It only knows the backend's URL and
+reports results over a plain HTTP POST; the backend is the single owner of the
+schema and the only process with database credentials. This keeps the worker
+disposable and easy to scale or replace.
 
-## Getting Started
+## Tech stack
 
-Run the setup in this order: **install, then start, then dev.** Skipping
-`start` is the most common cause of a broken first run (the schema
-won't exist yet).
+| Layer | Technology |
+| --- | --- |
+| Frontend | Vue 3, Vite, Pinia, vue-router, vue-i18n |
+| Backend | FastAPI, SQLAlchemy, Alembic, WebSockets |
+| Worker | Python asyncio, httpx |
+| Database | PostgreSQL 16 |
+| Containers | Podman (Compose), nginx |
+| CI | GitHub Actions, Dependabot |
+
+## Getting started
 
 ### Prerequisites
 
 - Python 3.12 or newer
-- Node.js with `npm`
+- Node.js 22 or newer and [pnpm](https://pnpm.io)
 - [Podman](https://podman.io) and `podman-compose`
 
-### Installation
+### Local development
 
 ```bash
-git clone <this-repository-url> chrono
+git clone https://github.com/carlosmorales-dev-mx/Chrono.git chrono
 cd chrono
-make install
+cp backend/.env.example backend/.env
+cp worker/.env.example worker/.env
+make install     # virtual environments and node_modules
+make start       # starts PostgreSQL, creates the schema, seeds the initial services
+make dev         # PostgreSQL + backend + worker + frontend together
 ```
 
-This creates a virtual environment for the backend, one for the worker,
-and installs the frontend's npm dependencies.
-
-### Configuration
-
-The backend reads its database connection string from `backend/.env`:
-
-```
-DATABASE_URL=postgresql://pulse:pulse@localhost:5433/pulse
-```
-
-Adjust the credentials and port to match `docker-compose.yml` if you
-change either. The worker needs to know where the backend is reachable;
-check its own configuration for the relevant variable before running it
-against a non-default host or port.
-
-### First run
-
-```bash
-make start
-```
-
-This starts PostgreSQL, waits for it to become ready, creates the
-schema, and seeds the eight initial services. Run it once after `make
-install`, or again any time you recreate the database volume from
-scratch.
-
-### Running
-
-```bash
-make dev
-```
-
-Starts PostgreSQL (if not already running), the backend, the worker,
-and the frontend together, and stops the three development processes
-cleanly on `Ctrl+C` (PostgreSQL keeps running; stop it separately with
-`make down`). Components can also run individually:
+Open `http://localhost:5173`. Put the same `INGEST_TOKEN` in `backend/.env` and
+`worker/.env`. The worker checks every 30 seconds, so the dashboard fills in
+gradually. Stop the three processes with `Ctrl+C`; PostgreSQL keeps running until
+`make down`. Each piece can also run on its own:
 
 ```bash
 make db          # PostgreSQL only
-make backend     # FastAPI only, with auto-reload
-make worker      # the checking worker only
-make frontend    # the Vite dev server only
-make status      # list running containers
+make backend     # FastAPI with auto-reload
+make worker      # the checking worker
+make frontend    # the Vite dev server
 ```
 
-**Be patient after the first run.** The worker checks every 30 seconds,
-so the dashboard populates gradually, not instantly. Latency charts and
-percentiles are computed over a rolling 24-hour window; a freshly seeded
-service will look sparse until several check cycles have run. This is
-expected, not a bug.
+### Everything in containers
+
+```bash
+make stack       # builds the images and starts PostgreSQL, backend, worker and frontend
+```
+
+Open `http://localhost:8080`. nginx serves the interface and forwards only the
+public API to the backend, so the browser talks to a single origin. The ingest
+endpoint is **not** reachable from outside the container network. Follow the logs
+with `make stack-logs` and stop everything with `make stack-down`; the data stays in
+the `chrono_pgdata` volume. The stack's database starts **empty**: add services from
+the interface, or load the initial ones with
+`podman exec chrono_backend python seed_servicios.py`. The stack reads its secrets from `backend/.env` and
+`worker/.env`, and uses its own volume and names, so it can run next to `make dev`.
+
+## Configuration
+
+Every variable has a sensible default except `DATABASE_URL`. The `.env.example`
+files document them in place.
+
+### Backend (`backend/.env`)
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `DATABASE_URL` | none (required) | PostgreSQL connection string. |
+| `INGEST_TOKEN` | empty | Shared secret the worker sends in `X-Ingest-Token`. If empty, anyone who can reach the backend can inject checks. |
+| `CHRONO_SOLO_LECTURA` | `false` | Read-only mode: blocks creating, editing, pinning and deleting services. |
+| `CORS_ORIGINS` | empty | Extra allowed origins, comma separated. `localhost` and `127.0.0.1` are always allowed. |
+| `PERMITIR_OBJETIVOS_PRIVADOS` | `false` | Allow services that point at internal addresses (`localhost`, `192.168.x.x`). Cloud metadata addresses are never allowed. |
+| `INCIDENTE_ABRIR_TRAS` | `2` | Bad checks in a row needed to open an incident. |
+| `INCIDENTE_CERRAR_TRAS` | `3` | Good checks in a row needed to close it. |
+| `RETENCION_DIAS` | `30` | Days of raw checks to keep (`0` = keep forever). Incidents are always kept. |
+| `LOG_LEVEL` | `INFO` | Log verbosity. |
+
+### Worker (`worker/.env`)
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `BACKEND_URL` | `http://127.0.0.1:8001` | Where the backend is. |
+| `INGEST_TOKEN` | empty | Must equal the backend's. |
+| `CHECK_INTERVAL` | `30` | Seconds between rounds (minimum 5). |
+| `UMBRAL_DEGRADADO_MS` | `1200` | A correct answer slower than this counts as "degraded". |
+| `TIMEOUT_S` | `5` | Seconds to wait per service before calling it down. |
+
+The worker also reads `PERMITIR_OBJETIVOS_PRIVADOS` and `LOG_LEVEL`, with the same meaning.
+
+### Frontend and containers
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `VITE_API_URL` | `http://127.0.0.1:8001` | Backend address at build time. Empty means "same origin" (the container image). |
+| `VITE_WS_URL` | derived | WebSocket address, if it differs from the API. |
+| `VITE_DEMO` | unset | `true` forces demo mode (simulated data). |
+| `POSTGRES_USER` | `pulse` | Database user in the container stack. |
+| `POSTGRES_PASSWORD` | `pulse` | Database password in the container stack. Change it outside your own machine. |
+| `POSTGRES_DB` | `pulse` | Database name in the container stack. |
+| `FRONTEND_PORT` | `8080` | Port where the stack serves the interface (bound to `127.0.0.1`). |
+
+## API
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/health` | `200` if the server and the database answer, `503` otherwise. |
+| `GET` | `/` | Server banner. |
+| `GET` | `/servicios` | Monitored services. |
+| `POST` | `/servicios` | Add a service (the URL is validated). |
+| `PUT` | `/servicios/{id}` | Rename or change the URL. |
+| `PATCH` | `/servicios/{id}/anclar` | Pin or unpin. |
+| `DELETE` | `/servicios/{id}` | Remove a service and its history. |
+| `GET` | `/chequeos/recientes` | The 50 latest checks. |
+| `GET` | `/chequeos/estado-actual` | Latest state of every service. |
+| `GET` | `/chequeos/{id}/historial` | Time-bucketed history, outages included (`horas`, `puntos`). |
+| `GET` | `/chequeos/{id}/percentiles` | p50 / p95 / p99 over 24 hours. |
+| `GET` | `/badge/{id}.svg` | SVG status badge. |
+| `GET` | `/incidentes` | Incidents (`dias`, `limite`, `servicio_id`, `estado`, `activos`); `X-Total-Count` header. |
+| `WS` | `/ws` | Live check updates. |
+
+The worker also posts to `/internal/ingest`, which requires the shared token and is
+not proxied by the container stack. Interactive docs are served by FastAPI at
+`/docs`.
+
+## Testing and quality
+
+```bash
+make test             # backend and worker unit tests (no database needed)
+make smoke            # live end-to-end check against a running backend (make dev)
+make migrate          # apply database migrations (Alembic)
+make revision m="add a column"    # new migration from model changes
+make unused           # report unused files, empty folders and caches
+make check-containers # lint Containerfiles, compose, nginx, CI and this README
+```
+
+`make smoke` creates one temporary service, exercises security, incident
+hysteresis, history and badges against your real database, and deletes it. The
+CI (`.github/workflows/ci.yml`) runs the unit tests, applies the migrations to an
+empty PostgreSQL, runs the same smoke test, builds the frontend, builds the three
+container images, and checks that this README still matches the code
+(`tools/verificar_docs.py`).
 
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |
-| --------- | -------------- | ----- |
-| `uvicorn: command not found` after `make backend` | The backend venv has no dependencies installed, or was never created | `make install-backend` |
-| `externally-managed-environment` from `pip install` | The shell is not actually inside the venv | Use the venv's binary directly: `backend/venv/bin/pip install -r backend/requirements.txt` |
-| `ImportError` / `ModuleNotFoundError` right after copying the project from another machine | Virtual environments are not portable; they bake in absolute paths from the machine that created them | `rm -rf backend/venv && python -m venv backend/venv && backend/venv/bin/pip install -r backend/requirements.txt` (repeat for `worker/venv`) |
-| `npm` errors after copying the project from another machine | `node_modules` uses symlinks and machine-specific native binaries, also not portable | `rm -rf frontend/node_modules && cd frontend && npm install` |
-| `Makefile:N: *** missing separator. Stop.` | A recipe line is indented with spaces instead of a literal tab | Check with `cat -A Makefile` -- real tabs show as `^I` |
-| `'case' builtin usado fuera de un bloque 'switch'` when activating a venv | The shell is `fish`, and `venv/bin/activate` is a `bash`/`sh` script | Use `source venv/bin/activate.fish` directly, or rely on `make`, which forces `bash` |
-| `short-name "postgres:16-alpine" did not resolve to an alias` | Podman needs either a fully-qualified image reference or `containers-common` | Use `docker.io/library/postgres:16-alpine` in `docker-compose.yml`, or install `containers-common` |
-| `relation "servicios" does not exist` | The schema was never created | Run `make start` |
-| Dashboard says "no services monitored yet" right after `make start` | Expected -- tables exist but the worker hasn't completed a check cycle yet | Wait up to 30 seconds; confirm `make worker` is running |
-| Charts or percentiles look sparse or empty | Both are computed over a rolling 24-hour window; a freshly seeded service has very few points so far | Let the worker run for a while -- this is expected, not a bug |
-| "Connection lost -- reconnecting..." banner | Usually a CORS mismatch between the frontend's actual port and the backend's allowed origins | Confirm `backend/main.py` uses `allow_origin_regex`, not a fixed `allow_origins` list, and that the backend is running |
+| --- | --- | --- |
+| `uvicorn: command not found` after `make backend` | The backend venv has no dependencies, or was never created | `make install-backend` |
+| `externally-managed-environment` from `pip install` | The shell is not inside the venv | Use the venv binary: `backend/venv/bin/pip install -r backend/requirements.txt` |
+| `ModuleNotFoundError` right after copying the project from another machine | Virtual environments bake in absolute paths and are not portable | `rm -rf backend/venv worker/venv`, then `make install` |
+| Frontend errors after copying the project | `node_modules` has machine-specific binaries | `rm -rf frontend/node_modules`, then `make install-frontend` |
+| `Makefile:N: *** missing separator. Stop.` | A recipe line is indented with spaces instead of a tab | Check with `cat -A Makefile`; real tabs show as `^I` |
+| `'case' builtin usado fuera de un bloque 'switch'` activating a venv | The shell is `fish` and `venv/bin/activate` is a `bash` script | `source venv/bin/activate.fish`, or rely on `make`, which forces `bash` |
+| `short-name "postgres:16-alpine" did not resolve to an alias` | Podman needs a fully qualified image name | Use `docker.io/library/postgres:16-alpine`, as `podman-compose.yml` does |
+| `relation "servicios" does not exist` | The schema was never created | `make migrate` (or `make start`) |
+| The worker logs `el backend rechazó el token` | `INGEST_TOKEN` differs between `backend/.env` and `worker/.env` | Put the same value in both and restart |
+| `make smoke` says no backend is answering | The backend is not running | Run `make dev` in one terminal and `make smoke` in another |
+| Adding a service fails with "dirección no permitida" | The URL points at an internal address | Use a public URL, or set `PERMITIR_OBJETIVOS_PRIVADOS=true` |
+| "Connection lost, reconnecting..." banner | The backend is down, or the frontend runs on an origin it does not allow | Check `make dev`; for a custom origin set `CORS_ORIGINS` |
+| `make stack` fails with an `env_file` error | `backend/.env` or `worker/.env` does not exist | `cp backend/.env.example backend/.env` (same for `worker`) |
 
-## Project Structure
+## Project structure
 
 ```
 .
 ├── backend
-│   ├── main.py                FastAPI app, CORS, WebSocket endpoint
-│   ├── database.py            SQLAlchemy engine and session
-│   ├── db_models.py           ORM models
-│   ├── models_schemas.py      Pydantic request/response schemas
-│   ├── websocket_manager.py   Broadcast to connected clients
-│   ├── incident_detector.py   State-transition to incident logic
-│   ├── init_db.py             Creates the schema (run once)
-│   ├── seed_servicios.py      Seeds the initial service list
-│   └── api/routes.py          All HTTP routes
+│   ├── api/routes.py           HTTP routes
+│   ├── main.py                 app, CORS, /health, WebSocket, startup tasks
+│   ├── config.py               settings from environment variables
+│   ├── dominio.py              pure logic: validation, incidents, history, percentiles, badge
+│   ├── incident_detector.py    applies the incident rules to the database
+│   ├── db_models.py            ORM models
+│   ├── models_schemas.py       request schemas
+│   ├── websocket_manager.py    broadcast to connected browsers
+│   ├── migrar.py               runs Alembic (falls back to a simple mode)
+│   ├── migrations/             Alembic environment and versions
+│   ├── retencion.py            deletes old raw checks
+│   ├── espera_db.py            waits for PostgreSQL (container start-up)
+│   ├── seed_servicios.py       seeds the initial services
+│   ├── Containerfile
+│   └── tests/                  unit tests
 ├── worker
-│   └── check_servicios.py     Parallel health checks, reports to the backend
+│   ├── check_servicios.py      parallel health checks
+│   ├── logica.py               pure logic: classification, internal-address guard
+│   ├── Containerfile
+│   └── tests/
 ├── frontend
-│   └── src
-│       ├── components/          Dashboard UI components
-│       ├── stores/               Pinia store
-│       └── composables/          Shared reactive logic (e.g. dynamic tab title)
-├── docker-compose.yml
+│   ├── src/                    views, components, stores, tour, locales
+│   ├── nginx.conf              serves the app and proxies the API
+│   └── Containerfile
+├── tools
+│   ├── mantenimiento.py        unused files, empty folders, caches
+│   ├── humo_backend.py         live smoke test
+│   ├── verificar_contenedores.py   static checks for containers and CI
+│   └── verificar_docs.py       checks this README against the code
+├── docs/img                    screenshots
+├── .github                     CI workflow and Dependabot
+├── podman-compose.yml          PostgreSQL for local development
+├── podman-compose.stack.yml    the whole stack in containers
 └── Makefile
 ```
 
-## Notable Design Decisions
+## Design decisions
 
-- **The worker never touches the database.** It only knows the
-  backend's HTTP URL. This keeps database credentials in exactly one
-  place and makes the worker trivial to scale, restart, or replace
-  independently of the schema.
-- **Latency history uses adaptive downsampling, not fixed time
-  buckets.** Grouping by clock hour means a freshly added service, or a
-  freshly recreated database, has an empty chart until a full hour of
-  data accumulates -- unacceptable for a live demo. Instead, raw points
-  are returned until a service accumulates more than roughly 30 checks
-  in 24 hours, after which they are grouped into equal-sized blocks by
-  row count rather than by wall-clock time.
-- **Incidents are detected at write time, not reconstructed later.**
-  Every ingested check result is compared against the previous state
-  for that service; a transition opens or closes an incident record
-  immediately, rather than being inferred retroactively from raw
-  history.
-- **CORS is configured with an origin regex, not a fixed list.** Vite
-  increments its dev server port automatically when the default is
-  already taken (for example, when another project is also running
-  locally). A fixed list of allowed origins breaks silently the moment
-  that happens; matching any `localhost`/`127.0.0.1` origin regardless
-  of port avoids the failure mode entirely for local development.
-- **Broadcast failures prune themselves.** If a connected browser has
-  gone away without a clean disconnect (closed tab, lost network), the
-  WebSocket manager removes it from the active list instead of letting
-  one dead connection interrupt the broadcast to everyone else.
+- **The worker never touches the database.** It only knows the backend's URL and a
+  token, so credentials live in one place and the worker is trivial to restart or
+  replace.
+- **Incidents use hysteresis.** Opening on the first bad check and closing on the
+  first good one turns any service that hovers around its threshold into a stream
+  of tiny incidents. Requiring several checks in a row fixes that, and the database
+  itself guarantees a single open incident per service (a partial unique index).
+  The start of an incident is the first bad check of the streak, not the one that
+  confirmed it.
+- **History is grouped by time and keeps outages.** Averaging fixed blocks of rows
+  can erase a short outage, and dropping checks without a latency hides it. Each
+  bucket reports its worst state and the mean latency of the checks that answered.
+  The bucket width adapts to the data, so a freshly added service shows its real
+  points immediately instead of an empty chart.
+- **The decision logic is plain Python.** `backend/dominio.py` and
+  `worker/logica.py` have no framework or network dependency, so the rules that
+  matter are unit-tested without a database.
+- **Internal addresses are blocked twice.** The backend validates URLs when a
+  service is created, and the worker checks again with the *resolved* IP right
+  before connecting, because a public name can point at an internal address. Cloud
+  metadata addresses are never allowed.
+- **The ingest endpoint needs a token and is not proxied.** In the container stack
+  nginx forwards only the public API.
+- **Broadcast failures prune themselves.** The WebSocket manager sends to every
+  browser at once with a timeout and drops the ones that stopped answering, so one
+  slow tab cannot hold up the rest.
+- **Blocking database work stays off the event loop.** The ingest handler runs the
+  synchronous SQLAlchemy code in a thread pool, then broadcasts.
+- **The interface avoids needless repainting.** Only two tiny components read the
+  one-second clock; everything else uses a 30-second clock. The tutorial and the
+  demo data are downloaded only when used, and timers pause while the tab is hidden.
+- **CORS is configured with an origin regex for localhost.** Vite moves to another
+  port when 5173 is taken, and a fixed list of origins would break silently.
 
-## Known Limitations
+## Known limitations
 
-- No authentication on any endpoint. Anything that can reach the
-  backend can add, edit, or delete monitored services, or submit fake
-  check results through the ingest endpoint. This is acceptable for a
-  local or trusted-network deployment; it is not safe to expose
-  publicly as-is.
-- No automated test suite yet.
-- The project went through several development phases (the codebase
-  still references "Fase 5.5" for the incident timeline in code
-  comments), but not all of that history is reflected in this document.
+- There are no user accounts. Anyone who can reach the backend can add, edit or
+  delete services, unless you turn on read-only mode (`CHRONO_SOLO_LECTURA`).
+  Put it behind your own authentication before exposing it publicly.
+- A single worker. Running several would duplicate every check.
+- No notifications yet (email, Slack, webhooks): incidents are only visible in
+  the interface.
+- Services are checked with a plain GET and a fixed latency threshold shared by
+  all of them (`UMBRAL_DEGRADADO_MS`), not a per-service one.
 
 ## Author
 
-Carlos Morales — [cmorales.dev](https://cmorales.dev)
+Carlos Morales -- [cmorales.dev](https://cmorales.dev)

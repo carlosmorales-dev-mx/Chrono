@@ -1,0 +1,141 @@
+# Integración continua de Chrono. Corre en cada push a main y en cada pull request.
+#   backend       pruebas de backend y worker, migraciones sobre una base vacía y prueba de humo en vivo
+#   frontend      instala y compila la interfaz
+#   configuracion revisa Containerfiles, compose, nginx, workflows y README, y construye las tres imágenes
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend y worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: chrono
+          POSTGRES_PASSWORD: chrono
+          POSTGRES_DB: chrono
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U chrono -d chrono"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://chrono:chrono@localhost:5432/chrono
+      INGEST_TOKEN: token-solo-para-el-ci
+      RETENCION_DIAS: "0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            worker/requirements.txt
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt -r worker/requirements.txt
+
+      - name: Pruebas del backend
+        working-directory: backend
+        run: python -m unittest discover -s tests -v
+
+      - name: Pruebas del worker
+        working-directory: worker
+        run: python -m unittest discover -s tests -v
+
+      - name: Migraciones sobre una base vacía
+        working-directory: backend
+        run: python -m alembic upgrade head
+
+      - name: ¿Los modelos y las migraciones dicen lo mismo? (informativo)
+        working-directory: backend
+        run: python -m alembic check
+        continue-on-error: true
+
+      - name: Archivos sin uso
+        run: python tools/mantenimiento.py sin-uso --check
+
+      - name: Prueba de humo contra el backend encendido
+        working-directory: backend
+        run: |
+          python -m uvicorn main:app --host 127.0.0.1 --port 8001 > "$RUNNER_TEMP/uvicorn.log" 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8001/health && break
+            sleep 1
+          done
+          python ../tools/humo_backend.py http://127.0.0.1:8001 --token "$INGEST_TOKEN"
+
+      - name: Log del servidor (solo si algo falló)
+        if: failure()
+        run: cat "$RUNNER_TEMP/uvicorn.log" || true
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Compilar
+        run: pnpm build
+
+  configuracion:
+    name: Configuración, documentación e imágenes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Revisar Containerfiles, compose, nginx y workflows
+        run: |
+          pip install pyyaml
+          python tools/verificar_contenedores.py
+
+      - name: Revisar que el README coincide con el código
+        run: python tools/verificar_docs.py
+
+      - name: Construir las imágenes
+        run: |
+          docker build -f backend/Containerfile -t chrono-backend backend
+          docker build -f worker/Containerfile -t chrono-worker worker
+          docker build -f frontend/Containerfile -t chrono-frontend --build-arg VITE_API_URL= frontend

@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useServiciosStore } from '../stores/servicios'
 import { useIncidentesStore } from '../stores/incidentes'
 import { useUiStore } from '../stores/ui'
-import { DEMO, API_URL } from '../config'
+import { DEMO, API_ETIQUETA } from '../config'
 import ServiceRow from '../components/ServiceRow.vue'
 import ActualizadoHace from '../components/ActualizadoHace.vue'
 import FleetCard from '../components/FleetCard.vue'
@@ -172,7 +172,7 @@ function reintentar() {
 
             <!-- No se pudo conectar con el servidor -->
             <div v-else-if="store.errorCarga" class="empty" role="alert">
-              <p>{{ t('error.body', { url: API_URL }) }}</p>
+              <p>{{ t('error.body', { url: API_ETIQUETA }) }}</p>
               <div class="fila-botones">
                 <button type="button" class="btn" @click="reintentar">{{ t('error.retry') }}</button>
                 <a v-if="!DEMO" class="btn primary" href="?demo">{{ t('error.demo') }}</a>

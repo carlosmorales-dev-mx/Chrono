@@ -1,9 +1,10 @@
-"""Ajustes de esquema idempotentes (seguros de correr tantas veces como quieras).
+"""Aplica las migraciones de la base de datos. Seguro de correr tantas veces como quieras.
 
-Hasta que el proyecto adopte Alembic, las bases que ya existían se actualizan aquí:
-create_all crea las tablas que falten y las sentencias de abajo agregan lo demás.
+Usa Alembic (backend/migrations/). Si Alembic no está instalado cae al modo simple de antes
+(create_all + los mismos índices), para que un entorno sin actualizar siga funcionando.
 """
 import logging
+from pathlib import Path
 
 from sqlalchemy import text
 
@@ -11,7 +12,9 @@ import db_models  # noqa: F401  (registra los modelos en Base.metadata)
 from database import Base, engine
 
 log = logging.getLogger("chrono")
+RAIZ = Path(__file__).resolve().parent
 
+# Modo simple (sin Alembic). Debe coincidir con migrations/versions/0002 (una prueba lo vigila).
 SENTENCIAS = [
     # Si por una carrera antigua quedó más de un incidente abierto por servicio, se cierran los sobrantes
     # (se conserva el más antiguo) para poder crear el índice único de abajo.
@@ -25,12 +28,27 @@ SENTENCIAS = [
 ]
 
 
-def aplicar():
+def _aplicar_sin_alembic():
     Base.metadata.create_all(bind=engine)
     with engine.begin() as conexion:
         for sentencia in SENTENCIAS:
             conexion.execute(text(sentencia))
-    log.info("migraciones aplicadas")
+    log.info("migraciones aplicadas (modo simple, sin Alembic)")
+
+
+def aplicar():
+    try:
+        from alembic import command
+        from alembic.config import Config
+    except ImportError:
+        log.warning("Alembic no está instalado: se usa el modo simple. Instálalo con «make install-backend».")
+        return _aplicar_sin_alembic()
+
+    configuracion = Config(str(RAIZ / "alembic.ini"))
+    configuracion.set_main_option("script_location", str(RAIZ / "migrations"))
+    configuracion.attributes["usar_logging_ini"] = False  # no pisar el logging de la aplicación
+    command.upgrade(configuracion, "head")
+    log.info("migraciones aplicadas (Alembic)")
 
 
 if __name__ == "__main__":
