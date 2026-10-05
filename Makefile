@@ -17,8 +17,7 @@ BACKEND_PORT  := 8001
 FRONTEND_PORT := 5173
 
 # Cambia esto a "pnpm" o "yarn" si el frontend no usa npm.
-FRONTEND_PKG := npm
-
+FRONTEND_PKG := pnpm
 .PHONY: help install install-backend install-worker install-frontend \
         start wait-db dev up db backend worker frontend down status \
         check-backend-ready check-worker-ready check-frontend-ready
@@ -76,7 +75,7 @@ dev: check-backend-ready check-worker-ready check-frontend-ready wait-db ## leva
 	@PIDS=(); \
 	setsid bash -c 'cd $(BACKEND_DIR) && while true; do $(BACKEND_UVICORN) main:app --reload --port $(BACKEND_PORT); echo "[backend] se cayó, reintentando en 2s..."; sleep 2; done' & PIDS+=($$!); \
 	setsid bash -c 'cd $(WORKER_DIR) && while true; do $(WORKER_PY) check_servicios.py; echo "[worker] se cayó, reintentando en 2s..."; sleep 2; done' & PIDS+=($$!); \
-	setsid bash -c 'cd $(FRONTEND_DIR) && exec $(FRONTEND_PKG) run dev -- --port $(FRONTEND_PORT)' & PIDS+=($$!); \
+	setsid bash -c 'cd $(FRONTEND_DIR) && exec $(FRONTEND_PKG) run dev --port $(FRONTEND_PORT)' & PIDS+=($$!); \
 	STOPPED=0; \
 	stop() { \
 		if [ "$$STOPPED" = "1" ]; then return 0; fi; \
@@ -112,7 +111,7 @@ worker: check-worker-ready ## corre el worker de chequeo de servicios
 	cd $(WORKER_DIR) && $(WORKER_PY) check_servicios.py
 
 frontend: check-frontend-ready ## corre el servidor de desarrollo del frontend
-	cd $(FRONTEND_DIR) && $(FRONTEND_PKG) run dev -- --port $(FRONTEND_PORT)
+	cd $(FRONTEND_DIR) && $(FRONTEND_PKG) run dev --port $(FRONTEND_PORT)
 
 down: ## detiene el contenedor de PostgreSQL
 	podman-compose down
@@ -140,3 +139,35 @@ check-worker-ready:
 
 check-frontend-ready:
 	@test -d $(FRONTEND_DIR)/node_modules || { echo "falta $(FRONTEND_DIR)/node_modules -- corre: make install-frontend"; exit 1; }
+
+# --- Chrono: pruebas, migraciones y mantenimiento (agregado por fase2.sh) ---
+PYTHON ?= python3
+
+.PHONY: test test-backend test-worker smoke migrate purge unused unused-clean empty
+
+test: test-backend test-worker ## corre las pruebas de backend y worker (sin base de datos)
+
+test-backend: check-backend-ready ## pruebas unitarias del backend
+	cd $(BACKEND_DIR) && $(BACKEND_PY) -m unittest discover -s tests
+
+test-worker: check-worker-ready ## pruebas unitarias del worker
+	cd $(WORKER_DIR) && $(WORKER_PY) -m unittest discover -s tests
+
+smoke: ## prueba de humo contra un backend ya encendido (make dev): endpoints, seguridad e incidentes
+	$(PYTHON) tools/humo_backend.py http://127.0.0.1:$(BACKEND_PORT) --token "$$(grep -E '^INGEST_TOKEN=' $(BACKEND_DIR)/.env | cut -d= -f2-)"
+
+migrate: check-backend-ready wait-db ## aplica a la base existente los ajustes de esquema (índices); es seguro repetirlo
+	cd $(BACKEND_DIR) && $(BACKEND_PY) migrar.py
+
+purge: check-backend-ready wait-db ## borra los chequeos más viejos que RETENCION_DIAS (30 por defecto)
+	cd $(BACKEND_DIR) && $(BACKEND_PY) retencion.py
+
+unused: ## informe: archivos sin uso, carpetas vacías y cachés (no borra nada)
+	$(PYTHON) tools/mantenimiento.py todo
+
+unused-clean: ## borra (con confirmación) lo que es seguro: archivos sin uso y carpetas vacías
+	$(PYTHON) tools/mantenimiento.py sin-uso --borrar
+	$(PYTHON) tools/mantenimiento.py vacias --borrar
+
+empty: ## solo carpetas vacías (informe)
+	$(PYTHON) tools/mantenimiento.py vacias

@@ -1,0 +1,40 @@
+# Claude / notas de desarrollo -- no forman parte del proyecto público
+CLAUDE.md
+claude.md
+.claude/
+notes/
+NOTES.md
+notes.md
+.apply-backups/
+
+# Python (backend y worker -- dos venvs independientes)
+backend/venv/
+worker/venv/
+**/__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.coverage
+htmlcov/
+
+# Variables de entorno -- credenciales/config local, cada quien tiene la suya
+.env
+.env.local
+backend/.env
+worker/.env
+frontend/.env
+frontend/.env.local
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+npm-debug.log*
+
+# Podman/PostgreSQL -- el volumen de datos lo maneja Podman fuera del
+# repo (named volume, no bind mount); si en algún momento se agrega un
+# volumen local o dumps de respaldo, se ignoran aquí:
+*.sql.gz
+pgdata/
