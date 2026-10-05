@@ -1,5 +1,5 @@
-"""Carga los 8 servicios iniciales -- correr UNA sola vez despues de
-init_db.py. Si ya existen (por nombre), no los duplica."""
+"""Carga los 8 servicios iniciales -- correr UNA sola vez despues de init_db.py.
+Si ya existen (por nombre), no los duplica."""
 from database import SessionLocal
 import db_models
 
@@ -14,15 +14,16 @@ SERVICIOS_INICIALES = [
     ("PyPI", "https://pypi.org"),
 ]
 
-db = SessionLocal()
-try:
-    existentes = {s.nombre for s in db.query(db_models.Servicio).all()}
-    agregados = 0
-    for nombre, url in SERVICIOS_INICIALES:
-        if nombre not in existentes:
-            db.add(db_models.Servicio(nombre=nombre, url=url))
-            agregados += 1
-    db.commit()
-    print(f"{agregados} servicios nuevos agregados ({len(existentes)} ya existían)")
-finally:
-    db.close()
+if __name__ == "__main__":
+    db = SessionLocal()
+    try:
+        existentes = {s.nombre for s in db.query(db_models.Servicio).all()}
+        agregados = 0
+        for nombre, url in SERVICIOS_INICIALES:
+            if nombre not in existentes:
+                db.add(db_models.Servicio(nombre=nombre, url=url))
+                agregados += 1
+        db.commit()
+        print(f"{agregados} servicios nuevos agregados ({len(existentes)} ya existían)")
+    finally:
+        db.close()

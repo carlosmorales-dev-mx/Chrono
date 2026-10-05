@@ -1,14 +1,48 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import text
+import hmac
+from datetime import datetime, timedelta, timezone
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response
+from fastapi.concurrency import run_in_threadpool
+from sqlalchemy import func, or_, text
 from sqlalchemy.orm import Session
 
+import config
 import db_models
+import dominio
 from database import get_db
+from incident_detector import procesar_transicion_estado
 from models_schemas import LoteChequeos, ServicioCreate
 from websocket_manager import manager
-from incident_detector import procesar_transicion_estado
 
 router = APIRouter()
+
+
+def exigir_escritura():
+    """Bloquea las rutas que modifican servicios cuando el servidor está en modo de solo lectura (demo pública)."""
+    if config.SOLO_LECTURA:
+        raise HTTPException(status_code=403, detail="El servidor está en modo de solo lectura")
+
+
+escritura = [Depends(exigir_escritura)]
+
+
+def _servicio_o_404(db: Session, servicio_id: int):
+    servicio = db.query(db_models.Servicio).filter(db_models.Servicio.id == servicio_id).first()
+    if not servicio:
+        raise HTTPException(status_code=404, detail="Servicio no encontrado")
+    return servicio
+
+
+def _serializar(servicio) -> dict:
+    return {"id": servicio.id, "nombre": servicio.nombre, "url": servicio.url, "anclado": servicio.anclado}
+
+
+def _url_ya_monitoreada(db: Session, url: str, excepto_id: Optional[int] = None) -> bool:
+    consulta = db.query(db_models.Servicio.id).filter(func.lower(db_models.Servicio.url) == url.lower())
+    if excepto_id is not None:
+        consulta = consulta.filter(db_models.Servicio.id != excepto_id)
+    return consulta.first() is not None
 
 
 # ---------- Gestión de servicios ----------
@@ -16,96 +50,96 @@ router = APIRouter()
 @router.get("/servicios")
 def listar_servicios(db: Session = Depends(get_db)):
     servicios = db.query(db_models.Servicio).order_by(db_models.Servicio.id).all()
-    return [{"id": s.id, "nombre": s.nombre, "url": s.url} for s in servicios]
+    return [_serializar(s) for s in servicios]
 
 
-@router.post("/servicios", status_code=201)
+@router.post("/servicios", status_code=201, dependencies=escritura)
 def crear_servicio(datos: ServicioCreate, db: Session = Depends(get_db)):
-    nuevo = db_models.Servicio(nombre=datos.nombre.strip(), url=datos.url.strip())
+    if _url_ya_monitoreada(db, datos.url):
+        raise HTTPException(status_code=409, detail="Ya existe un servicio con esa URL")
+    nuevo = db_models.Servicio(nombre=datos.nombre, url=datos.url)
     db.add(nuevo)
     db.commit()
     db.refresh(nuevo)
-    return {"id": nuevo.id, "nombre": nuevo.nombre, "url": nuevo.url}
+    return _serializar(nuevo)
 
 
-@router.put("/servicios/{servicio_id}")
+@router.put("/servicios/{servicio_id}", dependencies=escritura)
 def actualizar_servicio(servicio_id: int, datos: ServicioCreate, db: Session = Depends(get_db)):
-    """
-    Renombrar o cambiar la URL de un servicio ya existente -- antes solo
-    se podia crear/eliminar, nunca editar uno que ya estaba monitoreando.
-    """
-    servicio = db.query(db_models.Servicio).filter(db_models.Servicio.id == servicio_id).first()
-    if not servicio:
-        raise HTTPException(status_code=404, detail="Servicio no encontrado")
-    servicio.nombre = datos.nombre.strip()
-    servicio.url = datos.url.strip()
+    """Renombrar o cambiar la URL de un servicio que ya se está monitoreando."""
+    servicio = _servicio_o_404(db, servicio_id)
+    if _url_ya_monitoreada(db, datos.url, excepto_id=servicio_id):
+        raise HTTPException(status_code=409, detail="Ya existe un servicio con esa URL")
+    servicio.nombre = datos.nombre
+    servicio.url = datos.url
     db.commit()
     db.refresh(servicio)
-    return {"id": servicio.id, "nombre": servicio.nombre, "url": servicio.url}
+    return _serializar(servicio)
 
 
-@router.put("/servicios/{servicio_id}")
-def actualizar_servicio(servicio_id: int, datos: ServicioCreate, db: Session = Depends(get_db)):
-    """
-    Renombrar o cambiar la URL de un servicio ya existente -- antes solo
-    se podia crear/eliminar, nunca editar uno que ya estaba monitoreando.
-    """
-    servicio = db.query(db_models.Servicio).filter(db_models.Servicio.id == servicio_id).first()
-    if not servicio:
-        raise HTTPException(status_code=404, detail="Servicio no encontrado")
-    servicio.nombre = datos.nombre.strip()
-    servicio.url = datos.url.strip()
-    db.commit()
-    db.refresh(servicio)
-    return {"id": servicio.id, "nombre": servicio.nombre, "url": servicio.url}
-
-
-@router.patch("/servicios/{servicio_id}/anclar")
+@router.patch("/servicios/{servicio_id}/anclar", dependencies=escritura)
 def alternar_anclado(servicio_id: int, db: Session = Depends(get_db)):
-    """Fija o desfija un servicio -- los anclados se muestran siempre
-    primero en el frontend, sin importar su estado actual."""
-    servicio = db.query(db_models.Servicio).filter(db_models.Servicio.id == servicio_id).first()
-    if not servicio:
-        raise HTTPException(status_code=404, detail="Servicio no encontrado")
+    """Fija o desfija un servicio -- los anclados se muestran siempre primero en el frontend."""
+    servicio = _servicio_o_404(db, servicio_id)
     servicio.anclado = not servicio.anclado
     db.commit()
     db.refresh(servicio)
     return {"id": servicio.id, "anclado": servicio.anclado}
 
 
-@router.delete("/servicios/{servicio_id}", status_code=204)
+@router.delete("/servicios/{servicio_id}", status_code=204, dependencies=escritura)
 def eliminar_servicio(servicio_id: int, db: Session = Depends(get_db)):
-    servicio = db.query(db_models.Servicio).filter(db_models.Servicio.id == servicio_id).first()
-    if not servicio:
-        raise HTTPException(status_code=404, detail="Servicio no encontrado")
+    servicio = _servicio_o_404(db, servicio_id)
     db.delete(servicio)
     db.commit()
 
 
 # ---------- Ingesta (usada por el worker) ----------
 
-@router.post("/internal/ingest", status_code=201)
-async def ingerir_chequeos(lote: LoteChequeos, db: Session = Depends(get_db)):
-    nombres_por_id = {s.id: s.nombre for s in db.query(db_models.Servicio).all()}
+def _verificar_token(recibido: Optional[str]):
+    esperado = config.INGEST_TOKEN
+    if not esperado:
+        return  # sin token configurado el ingest queda abierto (solo desarrollo local)
+    if not recibido or not hmac.compare_digest(recibido.encode(), esperado.encode()):
+        raise HTTPException(status_code=401, detail="Token de ingesta inválido")
 
-    guardados = []
+
+def _guardar_lote(db: Session, lote: LoteChequeos):
+    """Guarda los chequeos y actualiza los incidentes. Es código de base de datos BLOQUEANTE, por eso se
+    ejecuta fuera del bucle de eventos (ver ingerir_chequeos). Devuelve (mensajes_para_el_websocket, ignorados)."""
+    nombres = {fila[0]: fila[1] for fila in db.query(db_models.Servicio.id, db_models.Servicio.nombre).all()}
+    mensajes = []
+    ignorados = 0
     for r in lote.resultados:
+        if r.servicio_id not in nombres:
+            # El servicio se borró mientras el worker medía: se descarta ese resultado, no todo el lote.
+            ignorados += 1
+            continue
+        procesar_transicion_estado(db, r.servicio_id, r.estado)  # antes de guardar el actual
         db.add(db_models.Chequeo(
             servicio_id=r.servicio_id, estado=r.estado,
             codigo_http=r.codigo, latencia_ms=r.latencia_ms,
         ))
-        procesar_transicion_estado(db, r.servicio_id, r.estado)
-        guardados.append(r)
-    db.commit()
-
-    for r in guardados:
-        await manager.transmitir({
-            "tipo": "chequeo", "servicio_id": r.servicio_id,
-            "nombre": nombres_por_id.get(r.servicio_id, "desconocido"),
+        db.flush()  # que el siguiente resultado del mismo servicio (si lo hay) vea este chequeo
+        mensajes.append({
+            "tipo": "chequeo", "servicio_id": r.servicio_id, "nombre": nombres[r.servicio_id],
             "estado": r.estado, "codigo_http": r.codigo, "latencia_ms": r.latencia_ms,
         })
+    db.commit()
+    return mensajes, ignorados
 
-    return {"guardados": len(lote.resultados)}
+
+@router.post("/internal/ingest", status_code=201)
+async def ingerir_chequeos(
+    lote: LoteChequeos,
+    db: Session = Depends(get_db),
+    x_ingest_token: Optional[str] = Header(default=None),
+):
+    _verificar_token(x_ingest_token)
+    mensajes, ignorados = await run_in_threadpool(_guardar_lote, db, lote)
+    for mensaje in mensajes:
+        await manager.transmitir(mensaje)
+    return {"guardados": len(mensajes), "ignorados": ignorados}
 
 
 # ---------- Consultas de estado ----------
@@ -148,73 +182,46 @@ def estado_actual(db: Session = Depends(get_db)):
 
 
 @router.get("/chequeos/{servicio_id}/historial")
-def historial_servicio(servicio_id: int, db: Session = Depends(get_db)):
+def historial_servicio(
+    servicio_id: int,
+    horas: int = Query(24, ge=1, le=168),
+    puntos: int = Query(96, ge=10, le=288),
+    db: Session = Depends(get_db),
+):
     """
-    Downsampling ADAPTATIVO, no una agregacion fija por hora.
-
-    Problema que tenia la version anterior: agrupar por hora de reloj
-    significa que un servicio recien agregado (o la base de datos
-    recien recreada) no tiene ni un solo punto para dibujar hasta que
-    pase una hora natural -- la grafica se queda vacia por diseño
-    durante minutos u horas, algo inaceptable en una demo en vivo.
-
-    La solucion correcta: traer los chequeos crudos de las ultimas
-    24h, y SOLO si hay demasiados (mas de TARGET_PUNTOS) agruparlos en
-    bloques de tamaño IGUAL EN CANTIDAD DE FILAS (no en tiempo fijo).
-    Con pocos datos, se ven todos los puntos reales de inmediato. Con
-    miles acumulados con el tiempo, se resumen a un numero legible sin
-    perder la forma general de la curva.
+    Historial en tramos de TIEMPO iguales (ver dominio.agrupar_historial). Cada punto trae el peor estado
+    del tramo y la latencia media de los chequeos que respondieron (null si todos fallaron), así las caídas
+    SIEMPRE se ven. El ancho del tramo se adapta a los datos: un servicio recién agregado muestra enseguida
+    sus puntos reales, sin esperar a que pase una hora.
     """
-    TARGET_PUNTOS = 30
-
-    filas = db.execute(text("""
-        SELECT latencia_ms, estado, creado_en
-        FROM chequeos
-        WHERE servicio_id = :sid
-          AND creado_en > now() - interval '24 hours'
-          AND latencia_ms IS NOT NULL
-        ORDER BY creado_en ASC
-    """), {"sid": servicio_id}).mappings().all()
-
-    if not filas:
-        return []
-
-    if len(filas) <= TARGET_PUNTOS:
-        return [
-            {"latencia_ms": f["latencia_ms"], "estado": f["estado"], "creado_en": f["creado_en"].isoformat()}
-            for f in filas
-        ]
-
-    tamano_bloque = -(-len(filas) // TARGET_PUNTOS)  # division hacia arriba
-    resultado = []
-    for i in range(0, len(filas), tamano_bloque):
-        bloque = filas[i:i + tamano_bloque]
-        promedio = round(sum(f["latencia_ms"] for f in bloque) / len(bloque))
-        estados = [f["estado"] for f in bloque]
-        estado_predominante = max(set(estados), key=estados.count)
-        resultado.append({
-            "latencia_ms": promedio,
-            "estado": estado_predominante,
-            "creado_en": bloque[-1]["creado_en"].isoformat(),
-        })
-    return resultado
+    ahora = datetime.now(timezone.utc)
+    desde = ahora - timedelta(hours=horas)
+    filas = (
+        db.query(db_models.Chequeo.creado_en, db_models.Chequeo.estado, db_models.Chequeo.latencia_ms)
+        .filter(db_models.Chequeo.servicio_id == servicio_id, db_models.Chequeo.creado_en > desde)
+        .order_by(db_models.Chequeo.creado_en.asc())
+        .all()
+    )
+    return dominio.agrupar_historial([(f[0], f[1], f[2]) for f in filas], ahora, horas=horas, puntos_max=puntos)
 
 
 @router.get("/chequeos/{servicio_id}/percentiles")
 def percentiles_servicio(servicio_id: int, db: Session = Depends(get_db)):
-    fila = db.execute(text("""
-        SELECT
-            percentile_cont(0.5) WITHIN GROUP (ORDER BY latencia_ms) AS p50,
-            percentile_cont(0.95) WITHIN GROUP (ORDER BY latencia_ms) AS p95,
-            percentile_cont(0.99) WITHIN GROUP (ORDER BY latencia_ms) AS p99
-        FROM chequeos
-        WHERE servicio_id = :sid AND creado_en > now() - interval '24 hours' AND latencia_ms IS NOT NULL
-    """), {"sid": servicio_id}).mappings().first()
-
+    desde = datetime.now(timezone.utc) - timedelta(hours=24)
+    filas = (
+        db.query(db_models.Chequeo.latencia_ms)
+        .filter(
+            db_models.Chequeo.servicio_id == servicio_id,
+            db_models.Chequeo.creado_en > desde,
+            db_models.Chequeo.latencia_ms.is_not(None),
+        )
+        .all()
+    )
+    valores = [f[0] for f in filas]
     return {
-        "p50": round(fila["p50"]) if fila["p50"] is not None else None,
-        "p95": round(fila["p95"]) if fila["p95"] is not None else None,
-        "p99": round(fila["p99"]) if fila["p99"] is not None else None,
+        "p50": dominio.percentil(valores, 0.5),
+        "p95": dominio.percentil(valores, 0.95),
+        "p99": dominio.percentil(valores, 0.99),
     }
 
 
@@ -231,51 +238,65 @@ def badge_servicio(servicio_id: int, db: Session = Depends(get_db)):
     if not fila:
         raise HTTPException(status_code=404, detail="Servicio no encontrado")
 
-    colores = {"up": "#1A6E5C", "degraded": "#6B4A18", "down": "#6B1E2E", None: "#4A3468"}
-    textos = {"up": "operativo", "degraded": "degradado", "down": "caido", None: "sin datos"}
-    color = colores.get(fila["estado"])
-    texto_estado = textos.get(fila["estado"])
-    nombre = fila["nombre"]
-
-    ancho_nombre = 12 * len(nombre) + 20
-    ancho_estado = 12 * len(texto_estado) + 20
-    ancho_total = ancho_nombre + ancho_estado
-
-    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="{ancho_total}" height="24">
-  <rect width="{ancho_nombre}" height="24" fill="#0D0714" rx="4"/>
-  <rect x="{ancho_nombre}" width="{ancho_estado}" height="24" fill="{color}" rx="4"/>
-  <rect x="{ancho_nombre-4}" width="4" height="24" fill="{color}"/>
-  <text x="{ancho_nombre/2}" y="16" font-family="Verdana,sans-serif" font-size="11" fill="#F5EAD3" text-anchor="middle">{nombre}</text>
-  <text x="{ancho_nombre + ancho_estado/2}" y="16" font-family="Verdana,sans-serif" font-size="11" fill="#F5EAD3" text-anchor="middle">{texto_estado}</text>
-</svg>'''
-    from fastapi.responses import Response
-    return Response(content=svg, media_type="image/svg+xml")
+    return Response(
+        content=dominio.construir_badge(fila["nombre"], fila["estado"]),
+        media_type="image/svg+xml",
+        headers={
+            "Cache-Control": "public, max-age=30",
+            "X-Content-Type-Options": "nosniff",
+            # Defensa en profundidad: aunque algo se colara, el navegador no ejecuta scripts en este SVG.
+            "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+        },
+    )
 
 
-# ---------- Fase 5.5: Línea de tiempo de incidentes ----------
+# ---------- Línea de tiempo de incidentes ----------
 
 @router.get("/incidentes")
-def listar_incidentes(db: Session = Depends(get_db)):
-    """Los ultimos 20 incidentes de TODOS los servicios, mas reciente
-    primero -- para la seccion de historial global del dashboard."""
-    filas = db.execute(text("""
-        SELECT i.id, s.nombre AS servicio, i.estado, i.inicio, i.fin,
-               EXTRACT(EPOCH FROM (COALESCE(i.fin, now()) - i.inicio))::int AS duracion_seg
-        FROM incidentes i
-        JOIN servicios s ON s.id = i.servicio_id
-        ORDER BY i.inicio DESC
-        LIMIT 20
-    """)).mappings().all()
+def listar_incidentes(
+    response: Response,
+    dias: int = Query(30, ge=1, le=365),
+    limite: int = Query(500, ge=1, le=2000),
+    servicio_id: Optional[int] = None,
+    estado: Optional[str] = None,
+    activos: bool = False,
+    db: Session = Depends(get_db),
+):
+    """
+    Incidentes de los últimos `dias` días (y SIEMPRE los que siguen abiertos), del más reciente al más antiguo.
+    Filtros opcionales: servicio_id, estado (degraded|down) y activos. La cabecera X-Total-Count dice cuántos
+    coinciden en total, por si `limite` los recortó.
+    """
+    if estado not in (None, "degraded", "down"):
+        raise HTTPException(status_code=422, detail="estado debe ser 'degraded' o 'down'")
+
+    ahora = datetime.now(timezone.utc)
+    desde = ahora - timedelta(days=dias)
+    consulta = (
+        db.query(db_models.Incidente, db_models.Servicio.nombre)
+        .join(db_models.Servicio, db_models.Servicio.id == db_models.Incidente.servicio_id)
+        .filter(or_(db_models.Incidente.fin.is_(None), db_models.Incidente.inicio >= desde))
+    )
+    if servicio_id is not None:
+        consulta = consulta.filter(db_models.Incidente.servicio_id == servicio_id)
+    if estado is not None:
+        consulta = consulta.filter(db_models.Incidente.estado == estado)
+    if activos:
+        consulta = consulta.filter(db_models.Incidente.fin.is_(None))
+
+    response.headers["X-Total-Count"] = str(consulta.count())
+    filas = consulta.order_by(db_models.Incidente.inicio.desc()).limit(limite).all()
 
     return [
         {
-            "id": f["id"],
-            "servicio": f["servicio"],
-            "estado": f["estado"],
-            "inicio": f["inicio"].isoformat(),
-            "fin": f["fin"].isoformat() if f["fin"] else None,
-            "activo": f["fin"] is None,
-            "duracion_seg": f["duracion_seg"],
+            "id": i.id,
+            "servicio_id": i.servicio_id,
+            "servicio": nombre,
+            "estado": i.estado,
+            "inicio": i.inicio.isoformat(),
+            "fin": i.fin.isoformat() if i.fin else None,
+            "activo": i.fin is None,
+            "duracion_seg": max(0, int(((i.fin or ahora) - i.inicio).total_seconds())),
         }
-        for f in filas
+        for i, nombre in filas
     ]

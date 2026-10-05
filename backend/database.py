@@ -1,13 +1,16 @@
-import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-from dotenv import load_dotenv
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-load_dotenv()
+import config
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+if not config.DATABASE_URL:
+    raise RuntimeError(
+        "Falta DATABASE_URL. Copia backend/.env.example a backend/.env y ajusta la conexión "
+        "(por ejemplo: postgresql://usuario:clave@localhost:5433/base)."
+    )
 
-engine = create_engine(DATABASE_URL)
+# pool_pre_ping: detecta conexiones que la base ya cerró (reinicio del contenedor) en vez de fallar una vez.
+engine = create_engine(config.DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
