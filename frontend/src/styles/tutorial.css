@@ -1,0 +1,51 @@
+/* ---------- Tutorial interactivo ---------- */
+.btn.sm { padding: 7px 14px; font-size: 14px; }
+.btn.nudge { animation: nudge 1.6s ease-in-out 3; }
+@keyframes nudge { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); } 50% { box-shadow: 0 0 0 8px transparent; } }
+
+#tour { display: none; position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: transparent; color: var(--ink); overflow: hidden; font: inherit; }
+#tour:popover-open { display: block; }
+#tour.open { display: block; z-index: 9999; }
+#tour .shield { position: absolute; inset: 0; }
+#tour .spot {
+  position: fixed; left: 50%; top: 50%; width: 0; height: 0; border-radius: 18px; pointer-events: none;
+  box-shadow: 0 0 0 100vmax rgba(10, 12, 32, 0.6);
+  transition: left 0.5s cubic-bezier(0.4, 0.1, 0.2, 1), top 0.5s cubic-bezier(0.4, 0.1, 0.2, 1), width 0.5s cubic-bezier(0.4, 0.1, 0.2, 1), height 0.5s cubic-bezier(0.4, 0.1, 0.2, 1);
+}
+#tour .spot::before { content: ''; position: absolute; inset: -2px; border: 2px solid var(--accent); border-radius: inherit; }
+#tour .spot.pulso::after { content: ''; position: absolute; inset: -2px; border: 2px solid var(--accent); border-radius: inherit; animation: aro 1.1s ease-out 1; }
+@keyframes aro { from { transform: scale(1); opacity: 0.9; } to { transform: scale(1.07); opacity: 0; } }
+
+#tour .tcard {
+  position: fixed; left: 0; top: 0; width: min(372px, calc(100vw - 28px)); padding: 18px 20px 16px;
+  border: 1px solid var(--card-border); border-radius: 26px; background: var(--dlg);
+  -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); box-shadow: var(--glass-shadow);
+  transition: left 0.5s cubic-bezier(0.4, 0.1, 0.2, 1), top 0.5s cubic-bezier(0.4, 0.1, 0.2, 1);
+}
+#tour .tcard:focus { outline: none; }
+.thead { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.thead h2 { font-size: 19px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; }
+.tcard p { font-size: 15px; line-height: 1.5; color: var(--ink2); }
+.tic { flex: none; width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--ink3); }
+.tic:hover { background: var(--inner); color: var(--ink); }
+.tprog { height: 3px; margin: 14px 0 12px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.tprog i { display: block; height: 100%; background: var(--accent); transition: width 0.5s ease; }
+.tfoot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.tcount { margin-right: auto; font-size: 13px; color: var(--ink3); }
+.tcard.is-busy [data-t] { opacity: 0.45; pointer-events: none; }
+
+#tour .cur { position: fixed; left: 0; top: 0; width: 0; height: 0; opacity: 0; pointer-events: none; transition: transform 0.9s cubic-bezier(0.45, 0.05, 0.2, 1), opacity 0.25s; }
+#tour .cur.on { opacity: 1; }
+#tour .cur svg { position: absolute; left: -2px; top: -2px; width: 26px; height: 26px; transform-origin: 2px 2px; transition: transform 0.12s; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.4)); }
+#tour .cur.press svg { transform: scale(0.8); }
+#tour .rip { position: fixed; width: 16px; height: 16px; margin: -8px 0 0 -8px; border: 2px solid var(--accent); border-radius: 50%; pointer-events: none; animation: ondita 0.65s ease-out forwards; }
+@keyframes ondita { from { transform: scale(0.4); opacity: 1; } to { transform: scale(3.4); opacity: 0; } }
+
+/* Estados "pasar el cursor" simulados por el tutorial */
+.seg.sim-hover { transform: scaleY(1.7); }
+.svc.sim-hover .svc-actions { opacity: 1; }
+.fleet i.sim-hover { transform: scaleY(1.35); }
+.dato.sim-hover { background: var(--inner); }
+
+.simchip { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 18px; border: 1px solid var(--card-border); border-radius: 999px; background: var(--dlg); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: var(--glass-shadow); font-size: 14px; color: var(--ink2); }
+.simchip[hidden] { display: none; }

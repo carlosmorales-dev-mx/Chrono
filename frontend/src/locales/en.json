@@ -1,68 +1,253 @@
 {
   "app": {
-    "name": "Chrono",
-    "tagline": "Your services' pulse over time"
+    "name": "Chrono"
   },
-  "form": {
-    "namePlaceholder": "Name (e.g. My API)",
-    "urlPlaceholder": "URL (e.g. mydomain.com)",
-    "add": "Add",
-    "adding": "Adding...",
-    "addError": "Couldn't add the service."
+  "nav": {
+    "label": "Sections",
+    "home": "Go to dashboard",
+    "panel": "Dashboard",
+    "incidents": "Incidents"
+  },
+  "tools": {
+    "tutorial": "Tutorial",
+    "theme": "Toggle theme"
+  },
+  "demo": {
+    "banner": "Demo mode: the data is simulated.",
+    "try": "Try a scenario",
+    "esc": {
+      "lento": "Slowness",
+      "caida": "Outage",
+      "ok": "All good"
+    },
+    "exit": "Exit demo"
+  },
+  "title": {
+    "allUp": "all operational",
+    "slow": "{n} slow",
+    "down": "{n} down"
+  },
+  "headline": {
+    "loading": "Loading services…",
+    "error": "Couldn't reach the server",
+    "errorSub": "Check that the backend is running, or try the demo.",
+    "empty": "You're not watching any service yet",
+    "emptySub": "Add the first one to start seeing its status.",
+    "waiting": "Waiting for the first checks",
+    "allUp": "All systems operational",
+    "oneDown": "{name} is not responding",
+    "manyDown": "{n} services are down",
+    "oneSlow": "{name} is slow",
+    "manySlow": "{n} services are slow",
+    "of": "{up} of {total} operational",
+    "updated": "Updated {n} s ago",
+    "reconnecting": "Reconnecting…"
+  },
+  "strip": {
+    "view": "View"
+  },
+  "list": {
+    "title": "Services",
+    "service": "Service",
+    "history": "Last 24 h",
+    "now": "Now",
+    "attention": "Need attention",
+    "operational": "Operational",
+    "empty": "No services yet.",
+    "emptyFilter": "No service matches this filter."
+  },
+  "filter": {
+    "all": "All",
+    "issues": "With issues",
+    "pinned": "Pinned"
+  },
+  "layout": {
+    "label": "View",
+    "list": "List",
+    "grid": "Tiles"
   },
   "status": {
     "up": "Operational",
     "degraded": "Degraded",
     "down": "Down",
-    "pending": "No data yet",
-    "connected": "Live",
-    "disconnected": "Reconnecting...",
-    "reconnectBanner": "Connection lost — reconnecting..."
+    "none": "No data"
   },
-  "metrics": {
-    "latency": "Latency",
-    "p95": "p95 (24h)",
+  "row": {
+    "slow": "{x}× slower",
+    "noReply": "Not responding",
+    "waiting": "Waiting for data…",
+    "noResponse": "No response",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "detail": {
+    "min": "Min",
     "avg": "Average",
-    "history": "Last 24h",
-    "noHistory": "not enough history yet",
-    "hourlyAvg": "hourly average",
-    "hoverHint": "Hover over the chart to see exact values"
+    "max": "Max",
+    "noHistory": "Not enough history to draw a chart yet.",
+    "chartLabel": "Latency over the last 24 hours",
+    "close": "Close details"
   },
-  "summary": {
-    "operational": "operational",
-    "degraded": "degraded",
-    "down": "down",
-    "uptime": "uptime"
+  "fleet": {
+    "title": "Last 24 h",
+    "caption": "of the time operational",
+    "slowDown": "{s} slow · {d} down",
+    "noData": "No checks to summarize yet."
   },
-  "empty": {
-    "title": "Nothing monitored yet",
-    "subtitle": "Add a service above to start seeing its status in real time."
-  },
-  "incidents": {
-    "title": "Incident history",
-    "ongoing": "Ongoing",
-    "duration": "Duration",
-    "activeCount": "{n} ongoing",
-    "wentDown": "The service stopped responding",
-    "wentDegraded": "The service responded slower than usual",
-    "justNow": "just now",
-    "minutesAgo": "{n}m ago",
-    "hoursAgo": "{n}h ago",
-    "empty": "No incidents recorded. All quiet here."
+  "form": {
+    "addTitle": "Add service",
+    "editTitle": "Edit service",
+    "name": "Name",
+    "url": "Address (URL)",
+    "namePlaceholder": "My API",
+    "urlPlaceholder": "mydomain.com",
+    "add": "Add service",
+    "save": "Save changes",
+    "saving": "Saving…",
+    "addError": "Couldn't save the service. Check the address and try again."
   },
   "confirm": {
     "deleteTitle": "Delete this service?",
-    "deleteBody": "You're about to stop monitoring \"{name}\". Its full history will be deleted and this can't be undone.",
+    "deleteBody": "You'll stop monitoring \"{name}\". Its whole history will be erased and this can't be undone.",
     "cancel": "Cancel",
-    "delete": "Yes, delete"
+    "delete": "Delete service"
   },
-  "editModal": {
-    "title": "Edit Service",
-    "save": "Save changes",
-    "saving": "Saving..."
+  "error": {
+    "body": "No response from {url}. Make sure the backend is running.",
+    "retry": "Retry",
+    "demo": "View with sample data"
   },
-  "pin": {
-    "pin": "Pin service",
-    "unpin": "Unpin service"
+  "incidents": {
+    "title": "Incidents",
+    "viewAll": "View all incidents",
+    "ongoing": "Ongoing",
+    "activeCount": "{n} ongoing",
+    "started": "started {when}",
+    "wentDown": "Stopped responding",
+    "wentDegraded": "Responded slower than usual",
+    "empty": "No incidents recorded.",
+    "loadError": "Couldn't load incidents.",
+    "summary": "Incident summary",
+    "summaryLine": "{n} in this period · {running} ongoing",
+    "statTotal": "Incidents",
+    "statAffected": "Time affected",
+    "statAverage": "Average duration",
+    "statLongest": "Longest",
+    "statLongestOf": "Longest · {name}",
+    "filterService": "Filter by service",
+    "filterType": "Filter by type",
+    "filterRange": "Filter by period",
+    "allServices": "All services",
+    "type": {
+      "all": "All",
+      "degraded": "Slowness",
+      "down": "Outages"
+    },
+    "range": {
+      "24h": "24 h",
+      "7d": "7 days",
+      "30d": "30 days",
+      "all": "All time"
+    },
+    "count": "{n} incident | {n} incidents",
+    "noMatches": "No incident matches these filters.",
+    "clear": "Clear filters",
+    "showMore": "Show {n} more",
+    "detail": {
+      "start": "Start",
+      "end": "End",
+      "duration": "Duration",
+      "type": "Type",
+      "noChart": "No latency recorded for that moment (only the last 24 h are kept)."
+    },
+    "featured": {
+      "live": "Right now",
+      "last": "Latest incident",
+      "elapsed": "Elapsed",
+      "resolved": "Resolved",
+      "none": "No incidents"
+    }
+  },
+  "time": {
+    "justNow": "just now",
+    "minAgo": "{n} min ago",
+    "hourAgo": "{n} h ago",
+    "dayAgo": "{n} d ago",
+    "since": "since {when}",
+    "sinceNow": "just now",
+    "today": "Today",
+    "yesterday": "Yesterday"
+  },
+  "tour": {
+    "of": "{n} of {total}",
+    "replay": "Replay the demo",
+    "again": "Watch again",
+    "try": "Try an outage",
+    "skip": "Skip",
+    "prev": "Back",
+    "next": "Next",
+    "close": "Close",
+    "s1": {
+      "t": "How to use Chrono",
+      "d": "Chrono tells you in one sentence if something is wrong. This tour plays by itself: move on at your own pace with Next or the arrow keys, and leave any time with Esc."
+    },
+    "s2": {
+      "t": "One bar per service",
+      "d": "Muted green: all good. Amber: slow. Red: not responding. Click one and the list takes you to that service."
+    },
+    "s3": {
+      "t": "What fails comes first",
+      "d": "Services with problems move up to the \"Need attention\" group and say what is happening and since when. Healthy ones stay below, quiet."
+    },
+    "s4": {
+      "t": "Click a row for details",
+      "d": "You get min, average, max and p95, plus the last 24 hours as a curve. Move the cursor over the chart to read each moment."
+    },
+    "s5": {
+      "t": "Pin, edit, delete",
+      "d": "The actions show up when you hover a row. Pin the services you care about most to keep them at hand."
+    },
+    "s6": {
+      "t": "Filter the list",
+      "d": "Keep only what has problems, or only your pinned services. The number on each filter tells you how many there are."
+    },
+    "s7": {
+      "t": "The last 24 hours",
+      "d": "Each bar is 30 minutes of your whole fleet and takes the worst state of that moment. The big number is the share of time it was operational."
+    },
+    "s8": {
+      "t": "Incidents at a glance",
+      "d": "Here you see what is happening now and the latest ones. For the full history, open \"View all incidents\"."
+    },
+    "s9": {
+      "t": "What is happening now, on top",
+      "d": "The ongoing incident is featured, with its curve and a live elapsed time. If there is none, it shows the latest one. Next to it, the summary: how many incidents, how much time they affected and how long they last."
+    },
+    "s10": {
+      "t": "Filter by service, type and period",
+      "d": "Combine the filters to find exactly what you need, for example only outages from the last 24 hours."
+    },
+    "s11": {
+      "t": "Open an incident",
+      "d": "You see when it started and ended, how long it lasted and, if it happened in the last 24 hours, the latency curve with that moment marked."
+    },
+    "s12": {
+      "t": "When something fails",
+      "d": "Watch what happens if OpenAI stops responding: the headline changes, the logo \"o\" turns red, a badge appears on Incidents and the service moves up to the attention group."
+    },
+    "s13": {
+      "t": "Add a service",
+      "d": "Type a name and its address. It shows up right away as \"Waiting for data\" and fills in with the first check."
+    },
+    "s14": {
+      "t": "Theme and language",
+      "d": "Switch between light and dark, and between Spanish and English, whenever you like."
+    },
+    "s15": {
+      "t": "All set",
+      "d": "You know the essentials. You can watch this tutorial again from the button at the top, or trigger an outage yourself."
+    }
   }
 }

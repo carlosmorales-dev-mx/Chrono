@@ -1,68 +1,253 @@
 {
   "app": {
-    "name": "Chrono",
-    "tagline": "El pulso de tus servicios en el tiempo"
+    "name": "Chrono"
   },
-  "form": {
-    "namePlaceholder": "Nombre (ej. Mi API)",
-    "urlPlaceholder": "URL (ej. midominio.com)",
-    "add": "Agregar",
-    "adding": "Agregando...",
-    "addError": "No se pudo agregar el servicio."
+  "nav": {
+    "label": "Secciones",
+    "home": "Ir al panel",
+    "panel": "Panel",
+    "incidents": "Incidentes"
+  },
+  "tools": {
+    "tutorial": "Tutorial",
+    "theme": "Cambiar tema"
+  },
+  "demo": {
+    "banner": "Modo demo: los datos son simulados.",
+    "try": "Probar un escenario",
+    "esc": {
+      "lento": "Lentitud",
+      "caida": "Caída",
+      "ok": "Todo bien"
+    },
+    "exit": "Salir de la demo"
+  },
+  "title": {
+    "allUp": "todo operativo",
+    "slow": "{n} con lentitud",
+    "down": "{n} caído(s)"
+  },
+  "headline": {
+    "loading": "Cargando servicios…",
+    "error": "No se pudo conectar con el servidor",
+    "errorSub": "Revisa que el backend esté en marcha o prueba la demo.",
+    "empty": "Aún no vigilas ningún servicio",
+    "emptySub": "Agrega el primero para empezar a ver su estado.",
+    "waiting": "Esperando los primeros chequeos",
+    "allUp": "Todo operativo",
+    "oneDown": "{name} no responde",
+    "manyDown": "{n} servicios caídos",
+    "oneSlow": "{name} responde lento",
+    "manySlow": "{n} servicios responden lento",
+    "of": "{up} de {total} operativos",
+    "updated": "Actualizado hace {n} s",
+    "reconnecting": "Reconectando…"
+  },
+  "strip": {
+    "view": "Ver"
+  },
+  "list": {
+    "title": "Servicios",
+    "service": "Servicio",
+    "history": "Últimas 24 h",
+    "now": "Ahora",
+    "attention": "Requieren atención",
+    "operational": "Operativos",
+    "empty": "No hay servicios todavía.",
+    "emptyFilter": "Ningún servicio coincide con este filtro."
+  },
+  "filter": {
+    "all": "Todos",
+    "issues": "Con problemas",
+    "pinned": "Anclados"
+  },
+  "layout": {
+    "label": "Vista",
+    "list": "Lista",
+    "grid": "Mosaico"
   },
   "status": {
     "up": "Operativo",
     "degraded": "Degradado",
     "down": "Caído",
-    "pending": "Sin datos aún",
-    "connected": "En vivo",
-    "disconnected": "Reconectando...",
-    "reconnectBanner": "Conexión perdida — reconectando..."
+    "none": "Sin datos"
   },
-  "metrics": {
-    "latency": "Latencia",
-    "p95": "p95 (24h)",
+  "row": {
+    "slow": "{x}× más lento",
+    "noReply": "No responde",
+    "waiting": "Esperando datos…",
+    "noResponse": "Sin respuesta",
+    "pin": "Anclar",
+    "unpin": "Quitar ancla",
+    "edit": "Editar",
+    "delete": "Eliminar"
+  },
+  "detail": {
+    "min": "Mínima",
     "avg": "Promedio",
-    "history": "Últimas 24h",
-    "noHistory": "sin historial suficiente aún",
-    "hourlyAvg": "promedio por hora",
-    "hoverHint": "Pasa el cursor sobre la gráfica para ver valores exactos"
+    "max": "Máxima",
+    "noHistory": "Todavía no hay historial suficiente para graficar.",
+    "chartLabel": "Latencia en las últimas 24 horas",
+    "close": "Cerrar detalle"
   },
-  "summary": {
-    "operational": "operativos",
-    "degraded": "degradados",
-    "down": "caídos",
-    "uptime": "uptime"
+  "fleet": {
+    "title": "Últimas 24 h",
+    "caption": "del tiempo operativo",
+    "slowDown": "{s} lento · {d} caído",
+    "noData": "Aún no hay chequeos para resumir."
   },
-  "empty": {
-    "title": "Aún no monitoreas nada",
-    "subtitle": "Agrega un servicio arriba para empezar a ver su estado en tiempo real."
-  },
-  "incidents": {
-    "title": "Historial de incidentes",
-    "ongoing": "En curso",
-    "duration": "Duración",
-    "activeCount": "{n} en curso",
-    "wentDown": "El servicio dejó de responder",
-    "wentDegraded": "El servicio respondió más lento de lo normal",
-    "justNow": "justo ahora",
-    "minutesAgo": "hace {n} min",
-    "hoursAgo": "hace {n}h",
-    "empty": "Sin incidentes registrados. Todo tranquilo por aquí."
+  "form": {
+    "addTitle": "Agregar servicio",
+    "editTitle": "Editar servicio",
+    "name": "Nombre",
+    "url": "Dirección (URL)",
+    "namePlaceholder": "Mi API",
+    "urlPlaceholder": "midominio.com",
+    "add": "Agregar servicio",
+    "save": "Guardar cambios",
+    "saving": "Guardando…",
+    "addError": "No se pudo guardar el servicio. Revisa la dirección e inténtalo de nuevo."
   },
   "confirm": {
     "deleteTitle": "¿Eliminar este servicio?",
     "deleteBody": "Vas a dejar de monitorear \"{name}\". Se borrará todo su historial y no se puede deshacer.",
     "cancel": "Cancelar",
-    "delete": "Sí, eliminar"
+    "delete": "Eliminar servicio"
   },
-  "editModal": {
-    "title": "Editar Servicio",
-    "save": "Guardar cambios",
-    "saving": "Guardando..."
+  "error": {
+    "body": "No hay respuesta de {url}. Comprueba que el backend esté levantado.",
+    "retry": "Reintentar",
+    "demo": "Ver con datos de ejemplo"
   },
-  "pin": {
-    "pin": "Anclar servicio",
-    "unpin": "Desanclar servicio"
+  "incidents": {
+    "title": "Incidentes",
+    "viewAll": "Ver todos los incidentes",
+    "ongoing": "En curso",
+    "activeCount": "{n} en curso",
+    "started": "inició {when}",
+    "wentDown": "Dejó de responder",
+    "wentDegraded": "Respondió más lento de lo normal",
+    "empty": "Sin incidentes registrados.",
+    "loadError": "No se pudieron cargar los incidentes.",
+    "summary": "Resumen de incidentes",
+    "summaryLine": "{n} en el periodo · {running} en curso",
+    "statTotal": "Incidentes",
+    "statAffected": "Tiempo afectado",
+    "statAverage": "Duración promedio",
+    "statLongest": "El más largo",
+    "statLongestOf": "El más largo · {name}",
+    "filterService": "Filtrar por servicio",
+    "filterType": "Filtrar por tipo",
+    "filterRange": "Filtrar por periodo",
+    "allServices": "Todos los servicios",
+    "type": {
+      "all": "Todos",
+      "degraded": "Lentitud",
+      "down": "Caídas"
+    },
+    "range": {
+      "24h": "24 h",
+      "7d": "7 días",
+      "30d": "30 días",
+      "all": "Todo"
+    },
+    "count": "{n} incidente | {n} incidentes",
+    "noMatches": "Ningún incidente coincide con estos filtros.",
+    "clear": "Quitar filtros",
+    "showMore": "Mostrar {n} más",
+    "detail": {
+      "start": "Inicio",
+      "end": "Fin",
+      "duration": "Duración",
+      "type": "Tipo",
+      "noChart": "No hay latencia guardada para ese momento (solo se conservan las últimas 24 h)."
+    },
+    "featured": {
+      "live": "Ahora mismo",
+      "last": "Último incidente",
+      "elapsed": "Transcurrido",
+      "resolved": "Resuelto",
+      "none": "Sin incidentes"
+    }
+  },
+  "time": {
+    "justNow": "justo ahora",
+    "minAgo": "hace {n} min",
+    "hourAgo": "hace {n} h",
+    "dayAgo": "hace {n} d",
+    "since": "desde {when}",
+    "sinceNow": "desde ahora",
+    "today": "Hoy",
+    "yesterday": "Ayer"
+  },
+  "tour": {
+    "of": "{n} de {total}",
+    "replay": "Repetir la demostración",
+    "again": "Ver de nuevo",
+    "try": "Probar una caída",
+    "skip": "Saltar",
+    "prev": "Anterior",
+    "next": "Siguiente",
+    "close": "Cerrar",
+    "s1": {
+      "t": "Así se usa Chrono",
+      "d": "Chrono te dice en una frase si algo va mal. Este recorrido se mueve solo: avanza a tu ritmo con Siguiente o las flechas del teclado, y sal cuando quieras con Esc."
+    },
+    "s2": {
+      "t": "Una barra por servicio",
+      "d": "Verde apagado: todo bien. Ámbar: va lento. Rojo: no responde. Al pulsar una, la lista te lleva a ese servicio."
+    },
+    "s3": {
+      "t": "Lo que falla va primero",
+      "d": "Los servicios con problemas suben al grupo «Requieren atención» y dicen qué pasa y desde cuándo. Los sanos quedan abajo, en silencio."
+    },
+    "s4": {
+      "t": "Pulsa una fila para ver el detalle",
+      "d": "Verás mínima, promedio, máxima y p95, y la curva de las últimas 24 horas. Pasa el cursor por la gráfica para leer cada momento."
+    },
+    "s5": {
+      "t": "Anclar, editar, eliminar",
+      "d": "Las acciones aparecen al pasar el cursor por una fila. Ancla los servicios que más te importan para tenerlos siempre a mano."
+    },
+    "s6": {
+      "t": "Filtra la lista",
+      "d": "Quédate solo con lo que tiene problemas o con tus anclados. El número de cada filtro te dice cuántos servicios hay."
+    },
+    "s7": {
+      "t": "Las últimas 24 horas",
+      "d": "Cada barra son 30 minutos de toda tu flota y toma el peor estado de ese momento. El número grande es el porcentaje de tiempo que estuvo operativa."
+    },
+    "s8": {
+      "t": "Incidentes de un vistazo",
+      "d": "Aquí ves lo que pasa ahora y lo más reciente. Para el historial completo, entra a «Ver todos los incidentes»."
+    },
+    "s9": {
+      "t": "Lo que pasa ahora, arriba",
+      "d": "El incidente en curso aparece destacado, con su curva y el tiempo transcurrido en vivo. Si no hay ninguno, muestra el último. A su lado va el resumen: cuántos incidentes hubo, cuánto tiempo afectaron y cuánto duran."
+    },
+    "s10": {
+      "t": "Filtra por servicio, tipo y periodo",
+      "d": "Combina los filtros para encontrar justo lo que buscas, por ejemplo solo las caídas de las últimas 24 horas."
+    },
+    "s11": {
+      "t": "Abre un incidente",
+      "d": "Verás cuándo empezó y terminó, cuánto duró y, si fue en las últimas 24 horas, la curva de latencia con ese momento marcado."
+    },
+    "s12": {
+      "t": "Cuando algo falla",
+      "d": "Mira qué pasa si OpenAI deja de responder: cambia el titular, la «o» del logo se pone roja, aparece una insignia en Incidentes y el servicio sube al grupo de atención."
+    },
+    "s13": {
+      "t": "Agrega un servicio",
+      "d": "Escribe un nombre y su dirección. Aparece enseguida como «Esperando datos» y se llena con el primer chequeo."
+    },
+    "s14": {
+      "t": "Tema e idioma",
+      "d": "Cambia entre claro y oscuro, y entre español e inglés, cuando quieras."
+    },
+    "s15": {
+      "t": "Listo",
+      "d": "Ya conoces lo importante. Puedes volver a ver este tutorial desde el botón de arriba, o provocar tú mismo una caída."
+    }
   }
 }

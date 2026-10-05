@@ -1,0 +1,164 @@
+/* ==========================================================================
+   Chrono — dirección "cristal pastel"
+   Los colores de estado (verde / ámbar / coral) se reservan para estados.
+   La interfaz usa azul cielo y lavanda.
+   ========================================================================== */
+:root {
+  --font: 'Outfit', 'Segoe UI', system-ui, sans-serif;
+
+  --bg:
+    radial-gradient(55% 60% at 0% 45%, #8fc9ff 0%, transparent 70%),
+    radial-gradient(45% 45% at 42% 0%, #c9b6ff 0%, transparent 70%),
+    radial-gradient(40% 45% at 72% 8%, #ffb9d6 0%, transparent 70%),
+    radial-gradient(40% 50% at 100% 12%, #ffd9a3 0%, transparent 70%),
+    radial-gradient(60% 60% at 100% 100%, #b9c9ff 0%, transparent 70%),
+    #e6ebff;
+
+  --shell: rgba(255, 255, 255, 0.36);
+  --shell-border: rgba(255, 255, 255, 0.85);
+  --card: rgba(255, 255, 255, 0.56);
+  --card-border: rgba(255, 255, 255, 0.9);
+  --inner: rgba(255, 255, 255, 0.72);
+  --dlg: rgba(255, 255, 255, 0.9);
+  --glass-shadow: 0 20px 60px rgba(76, 84, 160, 0.18);
+  --card-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 10px 30px rgba(76, 84, 160, 0.08);
+
+  --ink: #14172b;
+  --ink2: #4d5370;
+  --ink3: #5a6079;
+  --line: rgba(60, 70, 130, 0.13);
+  --accent: #2f6bff;
+  --pill: linear-gradient(135deg, #cdeaff, #9fd2ff);
+  --pill-ink: #0c2a57;
+  --btn: #14172b;
+  --btn-ink: #ffffff;
+
+  --ok: #14785a;
+  --ok-bg: #c9f1e2;
+  --ok-tile: linear-gradient(160deg, #c8f2e3, #8edcc0);
+  --ok-tape: #72cdac;
+  --quiet: #a3d9c6;
+  --slow: #8a4f00;
+  --slow-bg: #ffe4bf;
+  --slow-tile: linear-gradient(160deg, #ffe5bf, #f6bc78);
+  --slow-tape: #f0a43a;
+  --down: #a42a45;
+  --down-bg: #ffd5de;
+  --down-tile: linear-gradient(160deg, #ffd3dc, #f49cb2);
+  --down-tape: #e9587a;
+  --none-bg: rgba(100, 106, 133, 0.14);
+
+  --orb-up: radial-gradient(circle at 30% 25%, #eafcf4, #a8e8cf);
+  --orb-slow: radial-gradient(circle at 30% 25%, #fff0dc, #fdc88f);
+  --orb-down: radial-gradient(circle at 30% 25%, #ffe9ee, #f9a9bd);
+  --orb-blue: radial-gradient(circle at 30% 25%, #e8f5ff, #a6d4ff);
+  --orb-inner: rgba(255, 255, 255, 0.92);
+  --ring-bg: rgba(255, 255, 255, 0.7);
+  --grain-opacity: 0.4;
+  --solid: #f4f6fb;
+  --solid-2: #ffffff;
+  --grain-bg: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+
+  --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:
+      radial-gradient(55% 60% at 0% 45%, rgba(63, 120, 220, 0.5) 0%, transparent 70%),
+      radial-gradient(45% 45% at 42% 0%, rgba(124, 92, 230, 0.45) 0%, transparent 70%),
+      radial-gradient(40% 45% at 72% 8%, rgba(214, 90, 150, 0.35) 0%, transparent 70%),
+      radial-gradient(40% 50% at 100% 12%, rgba(220, 150, 70, 0.3) 0%, transparent 70%),
+      #0d1020;
+    --shell: rgba(8, 10, 26, 0.4);
+    --shell-border: rgba(255, 255, 255, 0.13);
+    --card: rgba(255, 255, 255, 0.06);
+    --card-border: rgba(255, 255, 255, 0.12);
+    --inner: rgba(255, 255, 255, 0.07);
+    --dlg: rgba(24, 27, 54, 0.92);
+    --glass-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    --card-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 10px 30px rgba(0, 0, 0, 0.25);
+    --ink: #eef0ff;
+    --ink2: #b7bbd9;
+    --ink3: #b4b9d8;
+    --line: rgba(255, 255, 255, 0.1);
+    --accent: #8fb0ff;
+    --pill: linear-gradient(135deg, #3f5ea8, #5379cf);
+    --pill-ink: #ffffff;
+    --btn: #eef0ff;
+    --btn-ink: #12152b;
+    --ok: #74e2b9;
+    --ok-bg: rgba(116, 226, 185, 0.16);
+    --ok-tile: linear-gradient(160deg, #3a8f78, #2a6d5c);
+    --ok-tape: #4fb894;
+    --quiet: #3f7f6d;
+    --slow: #fbca7a;
+    --slow-bg: rgba(247, 189, 102, 0.16);
+    --slow-tile: linear-gradient(160deg, #c98d3e, #9c6a28);
+    --slow-tape: #f2a93c;
+    --down: #ff93a9;
+    --down-bg: rgba(255, 147, 169, 0.16);
+    --down-tile: linear-gradient(160deg, #cf5a78, #a43e5b);
+    --down-tape: #ff6f8e;
+    --none-bg: rgba(255, 255, 255, 0.12);
+    --orb-up: radial-gradient(circle at 30% 25%, #4aa98a, #25705a);
+    --orb-slow: radial-gradient(circle at 30% 25%, #d9a255, #9c6a28);
+    --orb-down: radial-gradient(circle at 30% 25%, #d86a86, #a43e5b);
+    --orb-blue: radial-gradient(circle at 30% 25%, #5c8fd9, #3a5fa6);
+    --orb-inner: rgba(20, 24, 50, 0.92);
+    --ring-bg: rgba(255, 255, 255, 0.14);
+    --grain-opacity: 0.22;
+    --solid: #1a1f33;
+    --solid-2: #222842;
+    --grain-bg: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.07 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+}
+:root[data-theme="dark"] {
+  --bg:
+    radial-gradient(55% 60% at 0% 45%, rgba(63, 120, 220, 0.5) 0%, transparent 70%),
+    radial-gradient(45% 45% at 42% 0%, rgba(124, 92, 230, 0.45) 0%, transparent 70%),
+    radial-gradient(40% 45% at 72% 8%, rgba(214, 90, 150, 0.35) 0%, transparent 70%),
+    radial-gradient(40% 50% at 100% 12%, rgba(220, 150, 70, 0.3) 0%, transparent 70%),
+    #0d1020;
+  --shell: rgba(8, 10, 26, 0.4);
+  --shell-border: rgba(255, 255, 255, 0.13);
+  --card: rgba(255, 255, 255, 0.06);
+  --card-border: rgba(255, 255, 255, 0.12);
+  --inner: rgba(255, 255, 255, 0.07);
+  --dlg: rgba(24, 27, 54, 0.92);
+  --glass-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  --card-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 10px 30px rgba(0, 0, 0, 0.25);
+  --ink: #eef0ff;
+  --ink2: #b7bbd9;
+  --ink3: #b4b9d8;
+  --line: rgba(255, 255, 255, 0.1);
+  --accent: #8fb0ff;
+  --pill: linear-gradient(135deg, #3f5ea8, #5379cf);
+  --pill-ink: #ffffff;
+  --btn: #eef0ff;
+  --btn-ink: #12152b;
+  --ok: #74e2b9;
+  --ok-bg: rgba(116, 226, 185, 0.16);
+  --ok-tile: linear-gradient(160deg, #3a8f78, #2a6d5c);
+  --ok-tape: #4fb894;
+    --quiet: #3f7f6d;
+  --slow: #fbca7a;
+  --slow-bg: rgba(247, 189, 102, 0.16);
+  --slow-tile: linear-gradient(160deg, #c98d3e, #9c6a28);
+  --slow-tape: #f2a93c;
+  --down: #ff93a9;
+  --down-bg: rgba(255, 147, 169, 0.16);
+  --down-tile: linear-gradient(160deg, #cf5a78, #a43e5b);
+  --down-tape: #ff6f8e;
+  --none-bg: rgba(255, 255, 255, 0.12);
+  --orb-up: radial-gradient(circle at 30% 25%, #4aa98a, #25705a);
+  --orb-slow: radial-gradient(circle at 30% 25%, #d9a255, #9c6a28);
+  --orb-down: radial-gradient(circle at 30% 25%, #d86a86, #a43e5b);
+  --orb-blue: radial-gradient(circle at 30% 25%, #5c8fd9, #3a5fa6);
+  --orb-inner: rgba(20, 24, 50, 0.92);
+  --ring-bg: rgba(255, 255, 255, 0.14);
+  --grain-opacity: 0.22;
+    --solid: #1a1f33;
+    --solid-2: #222842;
+    --grain-bg: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.07 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}

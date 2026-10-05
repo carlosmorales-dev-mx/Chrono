@@ -1,0 +1,70 @@
+/* ---------- Navegación y vistas ---------- */
+.nav { display: flex; gap: 4px; padding: 4px; border: 1px solid var(--card-border); border-radius: 999px; background: var(--card); }
+.nav-link { display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px; border: 0; border-radius: 999px; background: transparent; color: var(--ink2); font-size: 15px; font-weight: 500; }
+.nav-link:hover { color: var(--ink); }
+.nav-link[aria-current="page"] { background: var(--pill); color: var(--pill-ink); }
+.nav-link .n { min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--slow-tape); color: #1a1205; font-size: 12px; font-weight: 600; text-align: center; }
+.nav-link .n.down { background: var(--down-tape); color: #fff; }
+.vista { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+.vista[hidden] { display: none; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.link { align-self: flex-start; margin-top: 12px; padding: 0; border: 0; background: none; color: var(--accent); font-size: 14.5px; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---------- Vista Incidentes ---------- */
+.resumen { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 0; }
+.dato { display: flex; flex-direction: column; gap: 4px; padding: 18px 24px; border-left: 1px solid var(--line); min-width: 0; }
+.dato:first-child { border-left: 0; }
+.dato .num { font-size: 30px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.1; }
+.dato .lab { font-size: 14px; color: var(--ink2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.historial { flex: 1; min-height: 0; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-bottom: 12px; }
+.select {
+  padding: 8px 34px 8px 14px;
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  background: var(--card) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='3' stroke-linecap='round'><path d='m6 9 6 6 6-6'/></svg>") no-repeat right 13px center;
+  -webkit-appearance: none;
+  appearance: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+.igrp .day { position: static; padding: 14px 4px 6px; background: transparent; }
+.irow { border-top: 1px solid var(--line); border-radius: 14px; }
+.irow.ongoing { background: linear-gradient(90deg, var(--slow-bg), transparent 70%); }
+.irow.ongoing.down { background: linear-gradient(90deg, var(--down-bg), transparent 70%); }
+.irow-main { width: 100%; display: grid; grid-template-columns: 10px minmax(0, 1fr) auto 96px; gap: 14px; align-items: center; padding: 12px 8px; border: 0; border-radius: 14px; background: none; text-align: left; }
+.irow-main:hover { background: var(--inner); }
+.irow .mk { width: 10px; height: 10px; border-radius: 50%; background: var(--slow-tape); }
+.irow.down .mk { background: var(--down-tape); }
+.irow .quien { display: flex; flex-direction: column; min-width: 0; }
+.irow .quien strong { font-size: 16.5px; font-weight: 500; }
+.irow .sub { font-size: 13.5px; color: var(--ink2); }
+.irow .rg { font-size: 14px; color: var(--ink2); white-space: nowrap; }
+.irow .dur { font-size: 15px; font-weight: 500; text-align: right; white-space: nowrap; }
+.idet { padding: 4px 8px 18px 32px; }
+.nochart { margin-top: 10px; font-size: 14px; color: var(--ink3); }
+.mas { display: flex; justify-content: center; padding: 16px 0 4px; }
+.empty p { margin-bottom: 12px; }
+
+@media (max-width: 1000px) { .vista { flex: none; } .historial { min-height: 320px; } }
+@media (max-width: 860px) {
+  .top { grid-template-columns: 1fr auto; }
+  .nav { grid-column: 1 / -1; grid-row: 2; }
+  .nav-link { flex: 1; justify-content: center; }
+  .resumen { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dato:nth-child(3) { border-left: 0; }
+  .dato:nth-child(n + 3) { border-top: 1px solid var(--line); }
+}
+@media (max-width: 640px) {
+  .irow-main { grid-template-columns: 10px minmax(0, 1fr) auto; }
+  .irow .rg { display: none; }
+  .idet { padding-left: 8px; }
+}
+
+/* ---------- Arreglos de acabado (vistos en navegador real) ---------- */
+.who > [data-k="sub"] { display: block; min-width: 0; overflow: hidden; }
+.who .note, .who .host { display: block; }
+.day { position: static; background: transparent; }
+.irow { border-radius: 0; }
+.irow.ongoing { border-radius: 14px; border-top-color: transparent; }
+.irow + .irow.ongoing { border-top-color: transparent; }
