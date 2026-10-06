@@ -25,5 +25,7 @@ WORKDIR /app
 COPY --chown=chrono:chrono . .
 USER chrono
 EXPOSE 8001
-# Espera a la base de datos (puede tardar unos segundos) y arranca. Las migraciones las aplica la propia app al iniciar.
-CMD ["sh", "-c", "python espera_db.py 60 && exec uvicorn main:app --host 0.0.0.0 --port 8001"]
+# Espera a la base de datos (puede tardar unos segundos) y, cuando responde, SE REEMPLAZA por uvicorn (exec). Así el proceso
+# principal siempre es Python o uvicorn —nunca un «sh» que no reenvía SIGTERM— y el contenedor se detiene al instante.
+# Las migraciones las aplica la propia app al iniciar.
+CMD ["python", "espera_db.py", "60", "--", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]

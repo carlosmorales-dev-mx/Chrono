@@ -12,6 +12,8 @@ import db_models  # noqa: F401  (registra los modelos en Base.metadata)
 from database import Base, engine
 
 log = logging.getLogger("chrono")
+# Alembic, al arrancar, registra un «setup plugin …» por cada extensión que carga. Es ruido: se baja a WARNING.
+logging.getLogger("alembic.runtime.plugins").setLevel(logging.WARNING)
 RAIZ = Path(__file__).resolve().parent
 
 # Modo simple (sin Alembic). Debe coincidir con migrations/versions/0002 (una prueba lo vigila).

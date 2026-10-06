@@ -176,13 +176,13 @@ empty: ## solo carpetas vacías (informe)
 .PHONY: stack stack-logs stack-down revision check-containers
 
 stack: ## levanta TODO en contenedores (PostgreSQL + backend + worker + frontend) en http://localhost:8080
-	podman-compose -f podman-compose.stack.yml up -d --build
+	podman-compose -p chrono -f podman-compose.stack.yml up -d --build
 
 stack-logs: ## sigue los logs del stack en contenedores
-	podman-compose -f podman-compose.stack.yml logs -f
+	podman-compose -p chrono -f podman-compose.stack.yml logs -f
 
 stack-down: ## detiene el stack en contenedores (los datos quedan en el volumen chrono_pgdata)
-	podman-compose -f podman-compose.stack.yml down
+	podman-compose -p chrono -f podman-compose.stack.yml down
 
 revision: check-backend-ready ## crea una migración desde los cambios del modelo:  make revision m="agrega una columna"
 	@test -n "$(m)" || { echo 'falta el mensaje:  make revision m="describe el cambio"'; exit 1; }
@@ -191,3 +191,13 @@ revision: check-backend-ready ## crea una migración desde los cambios del model
 check-containers: check-backend-ready ## revisa Containerfiles, compose, nginx, CI y README sin construir nada
 	$(BACKEND_PY) tools/verificar_contenedores.py
 	$(PYTHON) tools/verificar_docs.py
+
+# --- Chrono: restos del stack (agregado por fijar-versiones.sh) ---
+.PHONY: stack-reset
+stack-reset: ## quita contenedores y pod viejos del stack (NO los datos) y lo levanta de nuevo; útil si «make stack» chocó con restos
+	-@podman rm -f -t 0 chrono_worker 2>/dev/null
+	-@podman rm -f -t 0 chrono_frontend 2>/dev/null
+	-@podman rm -f -t 0 chrono_backend 2>/dev/null
+	-@podman rm -f -t 0 chrono_db 2>/dev/null
+	-@podman pod rm -f pod_chrono 2>/dev/null
+	$(MAKE) stack

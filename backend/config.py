@@ -32,8 +32,24 @@ def _entero(nombre: str, defecto: int, minimo: int = 0) -> int:
         return defecto
 
 
+def normalizar_url_bd(url):
+    """Pide el driver de PostgreSQL de forma EXPLÍCITA: «postgresql://» pasa a «postgresql+psycopg2://».
+
+    SQLAlchemy 2.1 cambió el driver por defecto de «postgresql://» de psycopg2 a psycopg 3. Este proyecto instala
+    psycopg2-binary, así que sin esto un entorno nuevo (contenedores, CI, una instalación limpia) falla con
+    «No module named 'psycopg'» mientras que uno viejo sigue funcionando. Pidiéndolo explícito se comporta igual
+    en SQLAlchemy 2.0 y 2.1. Si la URL ya trae un driver («postgresql+psycopg://…»), se respeta tal cual.
+    """
+    if not url:
+        return url
+    for prefijo in ("postgresql://", "postgres://"):
+        if url.startswith(prefijo):
+            return "postgresql+psycopg2://" + url[len(prefijo):]
+    return url
+
+
 # --- base de datos ---
-DATABASE_URL = _texto("DATABASE_URL") or None
+DATABASE_URL = normalizar_url_bd(_texto("DATABASE_URL")) or None
 
 # --- seguridad ---
 # Token compartido con el worker (cabecera X-Ingest-Token). Si está vacío, el ingest queda abierto (solo para desarrollo).

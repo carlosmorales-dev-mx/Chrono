@@ -1,14 +1,21 @@
 # Dependabot abre pull requests cuando hay versiones nuevas de las dependencias (y el CI los valida solo).
+# Las de Python van con versión exacta; «groups» junta todas las de una carpeta en UN pull request por semana.
 version: 2
 updates:
   - package-ecosystem: pip
     directory: /backend
     schedule:
       interval: weekly
+    groups:
+      dependencias-python:
+        patterns: ["*"]
   - package-ecosystem: pip
     directory: /worker
     schedule:
       interval: weekly
+    groups:
+      dependencias-python:
+        patterns: ["*"]
   - package-ecosystem: npm
     directory: /frontend
     schedule:
